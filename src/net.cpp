@@ -300,7 +300,7 @@ bool GetMyExternalIP2(const CService& addrConnect, const char* pszGet, const cha
     if (!ConnectSocket(addrConnect, hSocket))
         return error("GetMyExternalIP() : connection to %s failed", addrConnect.ToString().c_str());
 
-    send(hSocket, pszGet, strlen(pszGet), MSG_DONTWAIT/*, MSG_NOSIGNAL*/);
+    send(hSocket, pszGet, strlen(pszGet), MSG_NOSIGNAL);
 
     string strLine;
     while (RecvLine(hSocket, strLine))
@@ -402,7 +402,7 @@ bool GetMyExternalIP(CNetAddr& ipRet)
 void ThreadGetMyExternalIP(void* parg)
 {
     // Make this thread recognisable as the external IP detection thread
-    RenameThread("protoshares-ext-ip");
+    RenameThread("memorycoin-ext-ip");
 
     CNetAddr addrLocalHost;
     if (GetMyExternalIP(addrLocalHost))
@@ -1111,7 +1111,7 @@ void ThreadMapPort()
             }
         }
 
-        string strDesc = "ProtoShares " + FormatFullVersion();
+        string strDesc = "MemoryCoin " + FormatFullVersion();
 
         try {
             for(;;) {
@@ -1191,19 +1191,7 @@ void MapPort(bool)
 // The first name is used as information source for addrman.
 // The second name should resolve to a list of seed addresses.
 static const char *strMainNetDNSSeed[][2] = {
-    {"162.243.45.158", "162.243.45.158"},
-    {"192.241.150.158", "192.241.150.158"},
-    {"162.243.67.4", "162.243.67.4"},
-    {"162.243.54.126", "162.243.54.126"},
-    {"37.139.29.236", "37.139.29.236"},
-    {"64.90.183.137", "64.90.183.137"},
-    {"111.93.163.251","111.93.163.251"},
-    {"54.219.164.96","54.219.164.96"},
-    {"198.211.112.13","198.211.112.13"},
-    {"50.112.199.32","50.112.199.32"},
-    {"106.187.41.67","106.187.41.67"},
-    {"54.218.232.206","54.218.232.206"},
-    {"54.212.175.33","54.212.175.33"},
+    {"180.183.156.250", "180.183.156.250"},
     {NULL, NULL}
 };
 
@@ -1673,7 +1661,7 @@ bool BindListenPort(const CService &addrBind, string& strError)
     {
         int nErr = WSAGetLastError();
         if (nErr == WSAEADDRINUSE)
-            strError = strprintf(_("Unable to bind to %s on this computer. ProtoShares is probably already running."), addrBind.ToString().c_str());
+            strError = strprintf(_("Unable to bind to %s on this computer. MemoryCoin is probably already running."), addrBind.ToString().c_str());
         else
             strError = strprintf(_("Unable to bind to %s on this computer (bind returned error %d, %s)"), addrBind.ToString().c_str(), nErr, strerror(nErr));
         printf("%s\n", strError.c_str());

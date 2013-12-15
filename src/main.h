@@ -26,13 +26,13 @@ class CNode;
 struct CBlockIndexWorkComparator;
 
 /** The maximum allowed size for a serialized block, in bytes (network rule) */
-static const unsigned int MAX_BLOCK_SIZE = 500000;
+static const unsigned int MAX_BLOCK_SIZE = 1500000;
 /** The maximum size for mined blocks */
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 /** The maximum size for transactions we're willing to relay/mine */
 static const unsigned int MAX_STANDARD_TX_SIZE = MAX_BLOCK_SIZE_GEN/5;
 /** The maximum allowed number of signature check operations in a block (network rule) */
-static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
+static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/40;
 /** The maximum number of orphan transactions kept in memory */
 static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
 /** The maximum number of entries in an 'inv' protocol message */
@@ -46,10 +46,10 @@ static const unsigned int UNDOFILE_CHUNK_SIZE = 0x100000; // 1 MiB
 /** Fake height value used in CCoins to signify they are only in the memory pool (since 0.8) */
 static const unsigned int MEMPOOL_HEIGHT = 0x7FFFFFFF;
 /** No amount larger than this (in satoshi) is valid */
-static const int64 MAX_MONEY = 2000000 * COIN;
+static const int64 MAX_MONEY = 1000000 * COIN;
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 /** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
-static const int COINBASE_MATURITY = 100;
+static const int COINBASE_MATURITY = 60;
 /** Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp. */
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 /** Maximum number of script-checking threads allowed */
@@ -1321,7 +1321,7 @@ public:
     }
 	
     uint256 GetHash() const;
-    uint256 CalculateBestBirthdayHash(int& collisions);
+    uint256 CalculateBestBirthdayHash(int& collisions,char *mainMemoryPsuedoRandomData);
     void UpdateTime(const CBlockIndex* pindexPrev);
 };
 
@@ -2278,3 +2278,18 @@ public:
 };
 
 #endif
+
+bool isGrantAwardBlock(int64 nHeight);
+bool getGrantAwards(int64 nHeight);
+int64 getGrantDatabaseBlockHeight();
+void processNextBlockIntoGrantDatabase();
+bool getGrantAwardsFromDatabaseForBlock(int64 nHeight);
+bool ensureGrantDatabaseUptoDate(int64 nHeight);
+bool startsWith(const char *str, const char *pre);
+void getWinnersFromBallots(int64 nHeight);
+string electOrEliminate(int64 droopQuota,  int requiredCandidates);
+void electCandidate(string topOfThePoll, double gregorySurplusTransferValue,bool isLastCandidate);
+void eliminateCandidate(string topOfThePoll,bool isLastCandidate);
+void printBallots();
+int64 static GetGrantValue(int64 nHeight);
+bool deSerializeGrantDB(string filename);

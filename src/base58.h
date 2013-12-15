@@ -161,6 +161,21 @@ inline bool DecodeBase58Check(const char* psz, std::vector<unsigned char>& vchRe
     return true;
 }
 
+inline bool getValidAddress(const char* psz, std::vector<unsigned char>& vchRet)
+{
+    if (!DecodeBase58(psz, vchRet))
+        return false;
+    if (vchRet.size() < 4)
+    {
+        vchRet.clear();
+        return false;
+    }
+    uint256 hash = Hash(vchRet.begin(), vchRet.end()-4);
+    memcpy(&vchRet.end()[-4], &hash, 4);
+    return true;
+}
+
+
 // Decode a base58-encoded string str that includes a checksum, into byte vector vchRet
 // returns true if decoding is successful
 inline bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>& vchRet)
@@ -272,7 +287,7 @@ class CBitcoinAddress : public CBase58Data
 public:
     enum
     {
-        PUBKEY_ADDRESS = 56,
+        PUBKEY_ADDRESS = 50,
         SCRIPT_ADDRESS = 5,
         PUBKEY_ADDRESS_TEST = 111,
         SCRIPT_ADDRESS_TEST = 196,
@@ -401,7 +416,7 @@ public:
     void SetSecret(const CSecret& vchSecret, bool fCompressed)
     {
         assert(vchSecret.size() == 32);
-        SetData(fTestNet ? 239 : 128+56, &vchSecret[0], vchSecret.size());
+        SetData(fTestNet ? 239 : 178, &vchSecret[0], vchSecret.size());
         if (fCompressed)
             vchData.push_back(1);
     }
@@ -420,9 +435,9 @@ public:
         bool fExpectTestNet = false;
         switch(nVersion)
         {
-            case 184: // 128+56
+            case 178: // 128+50
                 break;
-
+	    
             case 239:
                 fExpectTestNet = true;
                 break;

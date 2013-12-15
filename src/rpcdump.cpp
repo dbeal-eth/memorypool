@@ -32,14 +32,29 @@ public:
     }
 };
 
+string convertAddress(const char address[], char newVersionByte){
+	std::vector<unsigned char> v;
+	DecodeBase58Check(address,v);
+	v[0]=newVersionByte;
+	string result = EncodeBase58Check(v);
+	return result;
+}
+
 Value importprivkey(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 3)
         throw runtime_error(
-            "importprivkey <protosharesprivkey> [label] [rescan=true]\n"
+            "importprivkey <memorycoinprivkey> [label] [rescan=true]\n"
             "Adds a private key (as returned by dumpprivkey) to your wallet.");
 
+    
     string strSecret = params[0].get_str();
+    printf("before %s",strSecret.c_str());
+    
+    strSecret = convertAddress(strSecret.c_str(),0xB2);
+    printf("after %s",strSecret.c_str());
+    
+    
     string strLabel = "";
     if (params.size() > 1)
         strLabel = params[1].get_str();
@@ -81,13 +96,13 @@ Value dumpprivkey(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw runtime_error(
-            "dumpprivkey <protosharesaddress>\n"
-            "Reveals the private key corresponding to <protosharesaddress>.");
+            "dumpprivkey <memorycoinaddress>\n"
+            "Reveals the private key corresponding to <memorycoinaddress>.");
 
     string strAddress = params[0].get_str();
     CBitcoinAddress address;
     if (!address.SetString(strAddress))
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid ProtoShares address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid MemoryCoin address");
     CKeyID keyID;
     if (!address.GetKeyID(keyID))
         throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to a key");

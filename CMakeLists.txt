@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8) # Needed for file(COPY ...)
 
-project(ProtoShares)
+project(MemoryCoin)
 
 enable_testing()
 
@@ -36,7 +36,7 @@ if(NOT ${OpenSSL_FOUND})
     message(FATAL_ERROR "Could not locate OpenSSL.")
 endif()
 
-# protoshares-qt dependencies (4.4.3 arbitrarily set via docs):
+# memorycoin-qt dependencies (4.4.3 arbitrarily set via docs):
 find_package(Qt4 4.4.3 COMPONENTS QtCore QtGui QtNetwork)
 
 # 

@@ -71,26 +71,26 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/locale DESTINATION
 qt4_wrap_ui(FORMS_HEADERS ${GUI_FORMS})
 qt4_add_resources(RESOURCES_RCC ${CMAKE_CURRENT_BINARY_DIR}/bitcoin.qrc)
 
-add_library(protosharesqt
+add_library(memorycoinqt
 	${GUI_SOURCES}
 	${BITCOIN_QM_FILES}
 	${FORMS_HEADERS}
 	${RESOURCES_RCC}
 	)
 
-set_target_properties(protosharesqt PROPERTIES AUTOMOC TRUE)
+set_target_properties(memorycoinqt PROPERTIES AUTOMOC TRUE)
 
-target_link_libraries(protosharesqt protoshares leveldb
+target_link_libraries(memorycoinqt memorycoin leveldb
 	${CMAKE_THREAD_LIBS_INIT}
 	${BDB_LIBRARY}
 	${Boost_LIBRARIES}
 	${OPENSSL_LIBRARIES}
 	)
 
-add_dependencies(protosharesqt protoshares_translations)
+add_dependencies(memorycoinqt memorycoin_translations)
 
-qt4_use_modules(protosharesqt Core Gui Network)
+qt4_use_modules(memorycoinqt Core Gui Network)
 
-add_executable(protoshares-qt bitcoin.cpp)
+add_executable(memorycoin-qt bitcoin.cpp)
 
-target_link_libraries(protoshares-qt protosharesqt)
+target_link_libraries(memorycoin-qt memorycoinqt)
