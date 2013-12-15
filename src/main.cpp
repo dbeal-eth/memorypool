@@ -20,6 +20,7 @@
 #include <iostream>
 #include <fstream>
 #include <boost/algorithm/string.hpp>
+#include <sys/stat.h>
 
 
 using namespace std;
