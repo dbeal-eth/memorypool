@@ -5460,15 +5460,16 @@ bool getGrantAwardsFromDatabaseForBlock(int64 nHeight){
 
 	awardWinners.clear();
 	grantAwards.clear();
-	wastedVotes.clear();
-	electedVotes.clear();
-	supportVotes.clear();
+
 		
 for(int i=0;i<numberOfOffices;i++){
 	ballots.clear();
 	ballotBalances.clear();
 	ballotWeights.clear();
-
+	wastedVotes.clear();
+	electedVotes.clear();
+	supportVotes.clear();
+	
 	//Iterate through every vote
 	for(vpit=votingPreferences[i].begin(); vpit!=votingPreferences[i].end(); ++vpit){
 		int64 voterBalance=balances[vpit->first];
@@ -5496,12 +5497,12 @@ for(int i=0;i<numberOfOffices;i++){
 		grantAwards[awardWinners[i]]=grantAwards[awardWinners[i]]+GetGrantValue(nHeight);
 		if(debugVote)grantAwardsOutput << "Add grant award to Block "<<awardWinners[i].c_str()<<" "<<GetGrantValue(nHeight)<<"\n";
 	}
-
+	if(debugVote)printCandidateSupport();
+	
 }	
 
 
 	//if(debugVote)printBalances(100,false,true);
-	if(debugVote)printCandidateSupport();
 	if(debugVote){grantAwardsOutput.close();}
 	return true;
 }

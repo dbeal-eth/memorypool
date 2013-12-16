@@ -200,10 +200,10 @@ namespace mc
 		if( a > comparisonSize ) return false;
 		
 		//Allocate memory required
-		char *cacheMemoryOperatingData;
-		char *cacheMemoryOperatingData2;	
-		cacheMemoryOperatingData=new char[cacheMemorySize];
-		cacheMemoryOperatingData2=new char[cacheMemorySize];
+		unsigned char *cacheMemoryOperatingData;
+		unsigned char *cacheMemoryOperatingData2;	
+		cacheMemoryOperatingData=new unsigned char[cacheMemorySize+16];
+		cacheMemoryOperatingData2=new unsigned char[cacheMemorySize];
 		uint32_t* cacheMemoryOperatingData32 = (uint32_t*)cacheMemoryOperatingData;
 		uint32_t* cacheMemoryOperatingData322 = (uint32_t*)cacheMemoryOperatingData2;
 		
@@ -211,8 +211,8 @@ namespace mc
 		memcpy((char*)&hash_tmp[0], (char*)&midHash, sizeof(midHash) );
 		uint32_t* index = (uint32_t*)hash_tmp;
 		
-		AES_KEY AESkey;
-		unsigned char iv[AES_BLOCK_SIZE];
+		//AES_KEY AESkey;
+		//unsigned char iv[AES_BLOCK_SIZE];
 		
 		uint32_t startLocation=a*cacheMemorySize/chunkSize;
 		uint32_t finishLocation=startLocation+(cacheMemorySize/chunkSize);
@@ -222,6 +222,11 @@ namespace mc
 			*index = i;
 			SHA512((unsigned char*)hash_tmp, sizeof(hash_tmp), (unsigned char*)&(cacheMemoryOperatingData[(i-startLocation)*chunkSize]));
 		}
+		
+		EVP_CIPHER_CTX ctx;
+		unsigned char key[32] = {0};
+		unsigned char iv[AES_BLOCK_SIZE];
+		int outlen1, outlen2;
 		
 		//memset(cacheMemoryOperatingData2,0,cacheMemorySize);
 		for(int j=0;j<AES_ITERATIONS;j++){
@@ -240,10 +245,17 @@ namespace mc
 			}
 				
 			//AES Encrypt using last 256bits as key
-			AES_set_encrypt_key((unsigned char*)&cacheMemoryOperatingData2[cacheMemorySize-32], 256, &AESkey);			
+			//AES_set_encrypt_key((unsigned char*)&cacheMemoryOperatingData2[cacheMemorySize-32], 256, &AESkey);			
+			//memcpy(iv,(unsigned char*)&cacheMemoryOperatingData2[cacheMemorySize-AES_BLOCK_SIZE],AES_BLOCK_SIZE);
+			//AES_cbc_encrypt((unsigned char*)&cacheMemoryOperatingData2[0], (unsigned char*)&cacheMemoryOperatingData[0], cacheMemorySize, &AESkey, iv, AES_ENCRYPT);
+			
+			memcpy(key,(unsigned char*)&cacheMemoryOperatingData2[cacheMemorySize-32],32);
 			memcpy(iv,(unsigned char*)&cacheMemoryOperatingData2[cacheMemorySize-AES_BLOCK_SIZE],AES_BLOCK_SIZE);
-			AES_cbc_encrypt((unsigned char*)&cacheMemoryOperatingData2[0], (unsigned char*)&cacheMemoryOperatingData[0], cacheMemorySize, &AESkey, iv, AES_ENCRYPT);
-				
+			EVP_EncryptInit(&ctx, EVP_aes_256_cbc(), key, iv);
+			EVP_EncryptUpdate(&ctx, cacheMemoryOperatingData, &outlen1, cacheMemoryOperatingData2, cacheMemorySize);
+			EVP_EncryptFinal(&ctx, cacheMemoryOperatingData + outlen1, &outlen2);
+			EVP_CIPHER_CTX_cleanup(&ctx);
+			
 		}
 			
 		//use last X bits as solution
