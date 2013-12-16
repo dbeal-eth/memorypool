@@ -1191,6 +1191,10 @@ void MapPort(bool)
 // The first name is used as information source for addrman.
 // The second name should resolve to a list of seed addresses.
 static const char *strMainNetDNSSeed[][2] = {
+    {"209.173.79.71", "209.173.79.71"},
+    {"138.91.140.219", "138.91.140.219"},
+    {"168.63.28.249", "168.63.28.249"},
+    {"137.116.168.89", "137.116.168.89"},
     {"180.183.156.250", "180.183.156.250"},
     {"83.84.109.240", "83.84.109.240"},
     {"46.4.102.69", "46.4.102.69"},
