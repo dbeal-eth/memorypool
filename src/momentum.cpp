@@ -261,7 +261,7 @@ namespace mc
 		//use last X bits as solution
 		uint32_t solution=cacheMemoryOperatingData32[(cacheMemorySize/4)-1]%comparisonSize;
 		uint32_t proofOfCalculation=cacheMemoryOperatingData32[(cacheMemorySize/4)-2];
-		printf("verify solution - %d / %u / %u\n",a,solution,proofOfCalculation);
+		//printf("verify solution - %d / %u / %u\n",a,solution,proofOfCalculation);
 		
 		//free memory
 		delete [] cacheMemoryOperatingData;
