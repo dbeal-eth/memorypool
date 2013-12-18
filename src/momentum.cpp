@@ -133,8 +133,8 @@ namespace mc
 		//free memory
 		delete [] cacheMemoryOperatingData;
 		delete [] cacheMemoryOperatingData2;
-		CRYPTO_cleanup_all_ex_data();
-		EVP_cleanup();
+		//CRYPTO_cleanup_all_ex_data();
+		//EVP_cleanup();
 		isComplete[threadNumber]=1;
 	}
 	
@@ -268,8 +268,8 @@ namespace mc
 		//free memory
 		delete [] cacheMemoryOperatingData;
 		delete [] cacheMemoryOperatingData2;		
-		CRYPTO_cleanup_all_ex_data();
-		EVP_cleanup();
+		//CRYPTO_cleanup_all_ex_data();
+		//EVP_cleanup();
 		
 		if(solution==1968 && proofOfCalculation==b){
 			return true;

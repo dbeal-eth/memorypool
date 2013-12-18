@@ -29,7 +29,8 @@ using namespace boost;
 //
 // Global state
 //
-static int DIFFICULTYKIMOTOFORKHEIGHT = 750;
+static int DIFFICULTYKIMOTOFORKHEIGHT = 606;
+//static int DIFFICULTYKIMOTOFORKHEIGHT = 750;
 
 CCriticalSection cs_setpwalletRegistered;
 set<CWallet*> setpwalletRegistered;
