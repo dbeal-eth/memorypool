@@ -5090,7 +5090,7 @@ static const int64 GRANTBLOCKINTERVAL = (2*60*60)/nTargetSpacing;
 
 static string GRANTPREFIX ="MVTE";
 static int numberOfOffices = 6;
-char *electedOffices[6] = {"ceo","cto","cno","cmo","cso","cha"};
+const char *electedOffices[6] = {"ceo","cto","cno","cmo","cso","cha"};
 //Chief Executive Officer
 //Chief Technology Officer
 //Chief Network Officer
@@ -5284,10 +5284,10 @@ bool ensureGrantDatabaseUptoDate(int64 nHeight){
 			//requiredgrantdatabaseheight is 20 less than the current block
 			int64 requiredGrantDatabaseHeight=nHeight-GRANTBLOCKINTERVAL;
 						
-			printf("Ensure grant database up to date %d\n",requiredGrantDatabaseHeight);
+            printf("Ensure grant database up to date %llu\n",requiredGrantDatabaseHeight);
 			
 			if(getGrantDatabaseBlockHeight()>requiredGrantDatabaseHeight){
-				printf("Grant database has processed too many blocks. Needs to be rebuilt. %d",nHeight);		
+                printf("Grant database has processed too many blocks. Needs to be rebuilt. %llu",nHeight);
 				return false;
 			}
 	
@@ -5535,9 +5535,9 @@ void printBalances(int64 howMany, bool printVoting, bool printWasted){
 
 bool getGrantAwardsFromDatabaseForBlock(int64 nHeight){
 	
-	printf("getGrantAwardsFromDatabase %d\n",nHeight);
+    printf("getGrantAwardsFromDatabase %llu\n",nHeight);
 	if(grantDatabaseBlockHeight!=nHeight-GRANTBLOCKINTERVAL){
-		printf("getGrantAwardsFromDatabase is being call when no awards are due. %d %llu\n",grantDatabaseBlockHeight,nHeight);
+        printf("getGrantAwardsFromDatabase is being call when no awards are due. %llu %llu\n",grantDatabaseBlockHeight,nHeight);
 		return false;
 	}
 	
