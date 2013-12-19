@@ -145,6 +145,28 @@ namespace mc
 		isComplete[threadNumber]=1;
 	}
 	
+	void waitForAllThreadsToComplete(char* threadsComplete,int totalThreads){
+		int complete=0;
+		float firstThreadFinishedTime=0;
+		bool watchDogTimerFinish=false;
+		do{
+			MilliSleep(100);
+			complete=0;
+			for(int i=0;i<totalThreads;i++){
+				if (threadsComplete[i]==1){
+					complete++;
+				}
+			}
+			if(complete>0 && firstThreadFinishedTime==0){
+				firstThreadFinishedTime=(float)clock();
+			}
+			if(firstThreadFinishedTime>0 && (float)clock()-firstThreadFinishedTime>1000){
+				//It's been over a second since the first thread completed - let's exit.
+				watchDogTimerFinish=true;
+			}
+		}while(complete!=totalThreads && !watchDogTimerFinish);
+	}
+	
  	std::vector< std::pair<uint32_t,uint32_t> > momentum_search( uint256 midHash, char *mainMemoryPsuedoRandomData, int totalThreads){
 		
 		printf("Start Search\n");
@@ -164,16 +186,7 @@ namespace mc
 			sha512Threads->create_thread(boost::bind(&SHA512Filler, mainMemoryPsuedoRandomData, i,totalThreads,midHash,threadsComplete));
 		}
 		//Wait for all threads to complete
-		int complete=0;
-		do{
-			MilliSleep(100);
-			complete=0;
-			for(int i=0;i<totalThreads;i++){
-				if (threadsComplete[i]==1){
-					complete++;
-				}
-			}
-		}while(complete!=totalThreads);
+		waitForAllThreadsToComplete(threadsComplete, totalThreads);
 		
 		//clock_t t2 = clock();
 		//printf("create psuedorandom data %f\n",(float)t2-(float)t1);
@@ -184,21 +197,17 @@ namespace mc
 			aesThreads->create_thread(boost::bind(&aesSearch, mainMemoryPsuedoRandomData, i,totalThreads,threadsComplete,&results));
 		}
 		//Wait for all threads to complete
-		do{
-			MilliSleep(100);
-			complete=0;
-			for(int i=0;i<totalThreads;i++){
-				if (threadsComplete[i]==1){
-					complete++;
-				}
-			}
-		}while(complete!=totalThreads);
-
+		waitForAllThreadsToComplete(threadsComplete, totalThreads);
+		
 		
 		//clock_t t3 = clock();
 		//printf("comparisons %f\n",(float)t3-(float)t2);
+		delete aesThreads;
+		delete sha512Threads;
 		return results;
 	}
+	
+	
 	
 	bool momentum_verify( uint256 midHash, uint32_t a, uint32_t b ){
 		//return false;
