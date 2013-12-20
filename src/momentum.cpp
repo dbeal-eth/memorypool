@@ -160,8 +160,8 @@ namespace mc
 			if(complete>0 && firstThreadFinishedTime==0){
 				firstThreadFinishedTime=(float)clock();
 			}
-			if(firstThreadFinishedTime>0 && (float)clock()-firstThreadFinishedTime>1000){
-				//It's been over a second since the first thread completed - let's exit.
+			if(firstThreadFinishedTime>0 && (float)clock()-firstThreadFinishedTime>60000){
+				//It's been over 60 seconds since the first thread completed - let's exit. This should happen very rarely.
 				watchDogTimerFinish=true;
 			}
 		}while(complete!=totalThreads && !watchDogTimerFinish);
