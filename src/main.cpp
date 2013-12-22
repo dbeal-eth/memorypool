@@ -1431,22 +1431,65 @@ void CBlockHeader::UpdateTime(const CBlockIndex* pindexPrev)
         nBits = GetNextWorkRequired(pindexPrev, this);
 }
 
-uint256 CBlockHeader::GetHash() const
-{
+std::map<std::string,std::string> lookupTable;
+uint256 CBlockHeader::GetHash() const{
 
-		uint256 midHash = GetMidHash();
-		    
-//		printf("GetHash - MidHash %s\n", midHash.ToString().c_str());
-//		printf("GetHash - Birthday A %u hash \n", nBirthdayA);
-//		printf("GetHash - Birthday B %u hash \n", nBirthdayB);
-  
-    uint256 r = Hash(BEGIN(nVersion), END(nBirthdayB));
-//    fprintf( stderr, "init hash %s\n", r.ToString().c_str() );
-		if(!mc::momentum_verify( midHash, nBirthdayA, nBirthdayB)){
-			return uint256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+	if(lookupTable.size()==0){
+		std::string line;
+		//load from disk - distribute with exe - trusted
+		ifstream myfile ("trustedhashlookup.txt");
+		if (myfile.is_open()){
+			while ( myfile.good() ){
+				getline (myfile,line);
+				std::vector<std::string> strs;
+				boost::split(strs, line, boost::is_any_of(","));
+				lookupTable[strs[0]]=strs[1];
+			}
+			myfile.close();
 		}
-  
-    return r; //Hash(BEGIN(nVersion), END(nBirthdayB));
+			
+		//load from disk - locally made
+		ifstream myfile2 ((GetDataDir() / "hashlookup.txt").string().c_str());
+		if (myfile2.is_open()){
+			while ( myfile2.good() ){
+				getline (myfile2,line);
+				std::vector<std::string> strs;
+				boost::split(strs, line, boost::is_any_of(","));
+				lookupTable[strs[0]]=strs[1];
+			}
+			myfile2.close();
+		}
+	}
+		
+	uint256 midHash = GetMidHash();
+	
+	
+	//Check for hash in map from lookup
+	stringstream ss;
+	ss << GetMidHash().GetHex() << "-" << nBirthdayA << "-" << nBirthdayB;
+	std::string lookupHash=ss.str();
+	uint256 cacheBlockHash;
+	if(lookupTable[lookupHash]==""){
+		cacheBlockHash=Hash(BEGIN(nVersion), END(nBirthdayB));
+		//put in map - we might need this again
+		bool valid=false;
+		if(!mc::momentum_verify( midHash, nBirthdayA, nBirthdayB)){
+			cacheBlockHash = uint256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+		}else{
+			valid =true;
+		}
+		lookupTable[lookupHash]=cacheBlockHash.GetHex();
+		
+		if(valid){
+			//if not invalid, save to disk
+			ofstream myfile;
+			myfile.open ((GetDataDir() / "hashlookup.txt").string().c_str(), ios::app);
+			myfile << lookupHash << "," << cacheBlockHash.GetHex() << "\n";
+			myfile.close();
+		}
+	}
+	cacheBlockHash.SetHex(lookupTable[lookupHash]);
+	return  cacheBlockHash;
 }
 
 uint256 CBlockHeader::CalculateBestBirthdayHash(int& collisions,char *scratchpad) {

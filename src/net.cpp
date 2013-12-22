@@ -27,7 +27,7 @@
 using namespace std;
 using namespace boost;
 
-static const int MAX_OUTBOUND_CONNECTIONS = 8;
+static const int MAX_OUTBOUND_CONNECTIONS = 4;
 
 bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
 
@@ -1195,7 +1195,7 @@ static const char *strMainNetDNSSeed[][2] = {
     {"180.183.155.90", "180.183.155.90"},
     {"113.94.7.14", "113.94.7.14"},
     {"64.120.43.226", "64.120.43.226"},
-    {"218.107.23.251", "218.107.23.251"},
+    {"69.30.254.58", "69.30.254.58"},
     {NULL, NULL}
 };
 

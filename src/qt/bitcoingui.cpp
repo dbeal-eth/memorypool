@@ -542,7 +542,9 @@ void BitcoinGUI::setNumConnections(int count)
     default: icon = ":/icons/connect_4"; break;
     }
     labelConnectionsIcon->setPixmap(QIcon(icon).pixmap(STATUSBAR_ICONSIZE,STATUSBAR_ICONSIZE));
-    labelConnectionsIcon->setToolTip(tr("%n active connection(s) to MemoryCoin network", "", count));
+    if(count<5){
+	labelConnectionsIcon->setToolTip(tr("%n active connection(s) to MemoryCoin network. Open port 1968 for more connections.", "", count));
+    }
 }
 
 void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
