@@ -1514,11 +1514,13 @@ uint256 CBlockHeader::CalculateBestBirthdayHash(int& collisions,char *scratchpad
 		uint32_t candidateBirthdayB=0;
 		
 		collisions=results.size();
+		uint256 fullHash = smallestHashSoFar;
+			
 		for (unsigned i=0; i < results.size(); i++) {
 			
 			nBirthdayA = results[i].first;
 			nBirthdayB = results[i].second;
-			uint256 fullHash = Hash(BEGIN(nVersion), END(nBirthdayB));
+			fullHash = Hash(BEGIN(nVersion), END(nBirthdayB));
 			if(fullHash<smallestHashSoFar){
 				//if better, update candidate birthdays
 				//printf("best hash so far for the nonce\n");
@@ -1530,7 +1532,7 @@ uint256 CBlockHeader::CalculateBestBirthdayHash(int& collisions,char *scratchpad
 			nBirthdayB = candidateBirthdayB;
 		}
 		
-		return GetHash();
+		return fullHash;
 	}
 
 const CTxOut &CTransaction::GetOutputFor(const CTxIn& input, CCoinsViewCache& view)
