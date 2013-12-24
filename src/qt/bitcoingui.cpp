@@ -544,6 +544,8 @@ void BitcoinGUI::setNumConnections(int count)
     labelConnectionsIcon->setPixmap(QIcon(icon).pixmap(STATUSBAR_ICONSIZE,STATUSBAR_ICONSIZE));
     if(count<5){
 	labelConnectionsIcon->setToolTip(tr("%n active connection(s) to MemoryCoin network. Open port 1968 for more connections.", "", count));
+    }else{
+	labelConnectionsIcon->setToolTip(tr("%n active connection(s) to MemoryCoin network.", "", count));
     }
 }
 
