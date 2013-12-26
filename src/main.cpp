@@ -21,7 +21,7 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <sys/stat.h>
-
+#include "poolminer.h"
 
 using namespace std;
 using namespace boost;
