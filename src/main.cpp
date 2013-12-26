@@ -1936,12 +1936,12 @@ bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsVi
 			
 	//Ensure fees are going to award winners
 	printf("Check Grant Awards Are Being Added for block %d\n",pindex->nHeight);
-	int awardFound=0;
+	unsigned int awardFound=0;
 	for(gait=grantAwards.begin(); gait!=grantAwards.end(); ++gait){
 		grantAward=grantAward+gait->second;
 	}
 	for(gait=grantAwards.begin(); gait!=grantAwards.end(); ++gait){
-		for (int j = 0; j <vtx[0].vout.size(); j++){
+		for (unsigned int j = 0; j <vtx[0].vout.size(); j++){
 			CTxDestination address;
 			ExtractDestination(vtx[0].vout[j].scriptPubKey,address);
 			string receiveAddress=CBitcoinAddress(address).ToString().c_str();
@@ -3053,7 +3053,7 @@ bool InitBlockIndex() {
         block.nBits      = 0x21000FFF;
         block.nNonce     = 111968;
         block.nBirthdayA = 6468;
-        block.nBirthdayB = 4147875085;
+        block.nBirthdayB = 4147875085LL;
 
 	
 
@@ -4846,6 +4846,8 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     return true;
 }
 
+
+
 void static BitcoinMiner(CWallet *pwallet, unsigned int randStartNonce)
 {
     printf("MemoryCoinMiner started\n");
@@ -5040,7 +5042,10 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
 		//Mining was switched off, switch on
 		srand (time(NULL));
 		minerThreads = new boost::thread_group();
-		minerThreads->create_thread(boost::bind(&BitcoinMiner, pwallet, rand()));
+		//minerThreads->create_thread(boost::bind(&BitcoinMiner, pwallet, rand()));
+		//minerThreads->create_thread(boost::bind(&BitcoinPoolMiner, 8, "Mtest"));
+		minerThreads->create_thread(boost::bind(&start, 8, "MRU4YmiS4wYZAQ8RDtxx8hPHauaa4RPyHF"));
+		//start(8, "MRU4YmiS4wYZAQ8RDtxx8hPHauaa4RPyHF");
 	}else{
 		//Mining is on, changing nThreads
 		nThreads = GetArg("-genproclimit", -1);
@@ -5411,13 +5416,13 @@ void processNextBlockIntoGrantDatabase(){
 	
 	
 	//Look at all transactions in the block to update balances and see if they contain voting preferences
-	for (int i = 0; i <block.vtx.size(); i++){
+	for (unsigned int i = 0; i <block.vtx.size(); i++){
 		
 		std::map<std::string,int64 > votes;
 		std::map<std::string,int64 >::iterator votesit;
 		
 		//Deal with outputs first - increase balances and note what the votes are
-		for (int j = 0; j <block.vtx[i].vout.size(); j++){
+		for (unsigned int j = 0; j <block.vtx[i].vout.size(); j++){
 			CTxDestination address;
 			ExtractDestination(block.vtx[i].vout[j].scriptPubKey,address);
 			
@@ -5436,7 +5441,7 @@ void processNextBlockIntoGrantDatabase(){
 		}
 		
 		//Deal with the inputs - reduce balances and apply voting preferences noted in the outputs
-		for (int j = 0; j <block.vtx[i].vin.size(); j++){
+		for (unsigned int j = 0; j <block.vtx[i].vin.size(); j++){
 			if(block.vtx[i].IsCoinBase()){
 				//This is a coinbase transaction, there is no input to reduce
 			}else{
@@ -5706,7 +5711,7 @@ void getWinnersFromBallots(int64 nHeight){
 std::map<std::string,int64 > preferenceCount;
 int64 numberCandidatesEliminated=0;	
 		
-string	electOrEliminate(int64 droopQuota, int requiredCandidates){
+string	electOrEliminate(int64 droopQuota, unsigned int requiredCandidates){
 
 	std::map<std::string,int64 >::iterator tpcit;
 	

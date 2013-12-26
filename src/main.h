@@ -2287,9 +2287,11 @@ bool getGrantAwardsFromDatabaseForBlock(int64 nHeight);
 bool ensureGrantDatabaseUptoDate(int64 nHeight);
 bool startsWith(const char *str, const char *pre);
 void getWinnersFromBallots(int64 nHeight);
-string electOrEliminate(int64 droopQuota,  int requiredCandidates);
+string electOrEliminate(int64 droopQuota,  unsigned int requiredCandidates);
 void electCandidate(string topOfThePoll, double gregorySurplusTransferValue,bool isLastCandidate);
 void eliminateCandidate(string topOfThePoll,bool isLastCandidate);
 void printBallots();
-int64 static GetGrantValue(int64 nHeight);
+//int64 static GetGrantValue(int64 nHeight);
 bool deSerializeGrantDB(string filename);
+
+
