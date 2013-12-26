@@ -47,7 +47,7 @@ namespace mc
 		isComplete[threadNumber]=1;
 	}
 	
-	void static aesSearch(char *mainMemoryPsuedoRandomData, int threadNumber, int totalThreads, char* isComplete, std::vector< std::pair<uint32_t,uint32_t> > *results){
+	void static aesSearch(char *mainMemoryPsuedoRandomData, int threadNumber, int totalThreads, char* isComplete, std::vector< std::pair<uint32_t,uint32_t> > *results, boost::mutex *mtx){
 		//Allocate temporary memory
 		unsigned char *cacheMemoryOperatingData;
 		unsigned char *cacheMemoryOperatingData2;	
@@ -133,6 +133,7 @@ namespace mc
 			if(solution==1968){
 				uint32_t proofOfCalculation=cacheMemoryOperatingData32[(cacheMemorySize/4)-2];
 				printf("found solution - %d / %u / %u\n",k,solution,proofOfCalculation);
+				boost::mutex::scoped_lock lck(*mtx);
 				(*results).push_back( std::make_pair( k, proofOfCalculation ) );
 			}
 		}
@@ -190,11 +191,12 @@ namespace mc
 		
 		//clock_t t2 = clock();
 		//printf("create psuedorandom data %f\n",(float)t2-(float)t1);
-
+		
+		boost::mutex mtx;
 		boost::thread_group* aesThreads = new boost::thread_group();
 		threadsComplete=new char[totalThreads];
 		for (int i = 0; i < totalThreads; i++){
-			aesThreads->create_thread(boost::bind(&aesSearch, mainMemoryPsuedoRandomData, i,totalThreads,threadsComplete,&results));
+			aesThreads->create_thread(boost::bind(&aesSearch, mainMemoryPsuedoRandomData, i,totalThreads,threadsComplete,&results, &mtx));
 		}
 		//Wait for all threads to complete
 		waitForAllThreadsToComplete(threadsComplete, totalThreads);

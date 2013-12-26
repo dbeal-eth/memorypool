@@ -21,7 +21,7 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <sys/stat.h>
-#include "poolminer.h"
+//#include "poolminer.h"
 
 using namespace std;
 using namespace boost;
@@ -5042,9 +5042,10 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
 		//Mining was switched off, switch on
 		srand (time(NULL));
 		minerThreads = new boost::thread_group();
-		//minerThreads->create_thread(boost::bind(&BitcoinMiner, pwallet, rand()));
+		minerThreads->create_thread(boost::bind(&BitcoinMiner, pwallet, rand()));
 		//minerThreads->create_thread(boost::bind(&BitcoinPoolMiner, 8, "Mtest"));
-		minerThreads->create_thread(boost::bind(&start, 8, "MRU4YmiS4wYZAQ8RDtxx8hPHauaa4RPyHF"));
+		
+		//minerThreads->create_thread(boost::bind(&start, 8, "MRU4YmiS4wYZAQ8RDtxx8hPHauaa4RPyHF"));
 		//start(8, "MRU4YmiS4wYZAQ8RDtxx8hPHauaa4RPyHF");
 	}else{
 		//Mining is on, changing nThreads
