@@ -66,6 +66,9 @@ BitcoinGUI::BitcoinGUI(QWidget *parent) :
     miningTwoAction(0),
     miningThreeAction(0),
     miningFourAction(0),
+    miningFiveAction(0),
+    miningSixAction(0),
+    miningPoolMMCAction(0),
     aboutQtAction(0),
     trayIcon(0),
     notificator(0),
@@ -254,6 +257,13 @@ void BitcoinGUI::createActions()
    // miningThreeAction->setMenuRole(QAction::PreferencesRole);
     miningFourAction = new QAction(QIcon(":/icons/mining"), tr("Mine 8 Processes (1GB Required)"), this);
     miningFourAction->setStatusTip(tr("Mine MemoryCoin with 8 processes. 1GB Required."));
+    miningFiveAction = new QAction(QIcon(":/icons/mining"), tr("Mine 16 Processes (1GB Required)"), this);
+    miningFiveAction->setStatusTip(tr("Mine MemoryCoin with 16 processes. 1GB Required."));
+    miningSixAction = new QAction(QIcon(":/icons/mining"), tr("Mine 32 Processes (1GB Required)"), this);
+    miningSixAction->setStatusTip(tr("Mine MemoryCoin with 32 processes. 1GB Required."));
+    miningPoolMMCAction = new QAction(QIcon(":/icons/mining"), tr("Launch Pool Miner (MMCPool)"), this);
+    miningPoolMMCAction->setStatusTip(tr("Launch Pool Miner (MMCPool)"));
+    
    // miningFourAction->setMenuRole(QAction::PreferencesRole);
     
     signMessageAction = new QAction(QIcon(":/icons/edit"), tr("Sign &message..."), this);
@@ -279,6 +289,10 @@ void BitcoinGUI::createActions()
     connect(miningTwoAction, SIGNAL(triggered()), this, SLOT(miningTwo()));
     connect(miningThreeAction, SIGNAL(triggered()), this, SLOT(miningThree()));
     connect(miningFourAction, SIGNAL(triggered()), this, SLOT(miningFour()));
+    connect(miningFiveAction, SIGNAL(triggered()), this, SLOT(miningFive()));
+    connect(miningSixAction, SIGNAL(triggered()), this, SLOT(miningSix()));
+    connect(miningPoolMMCAction, SIGNAL(triggered()), this, SLOT(miningPoolMMC()));
+    
     
     connect(signMessageAction, SIGNAL(triggered()), this, SLOT(gotoSignMessageTab()));
     connect(verifyMessageAction, SIGNAL(triggered()), this, SLOT(gotoVerifyMessageTab()));
@@ -312,6 +326,11 @@ void BitcoinGUI::createMenuBar()
     settings->addAction(miningTwoAction);
     settings->addAction(miningThreeAction);
     settings->addAction(miningFourAction);
+    settings->addAction(miningFiveAction);
+    settings->addAction(miningSixAction);
+    //settings->addAction(miningPoolMMCAction);
+    
+
     settings->addSeparator();
     settings->addAction(optionsAction);
 
@@ -899,6 +918,12 @@ void BitcoinGUI::miningOne(){miningOn(1);}
 void BitcoinGUI::miningTwo(){miningOn(2);}
 void BitcoinGUI::miningThree(){miningOn(4);}
 void BitcoinGUI::miningFour(){miningOn(8);}
+void BitcoinGUI::miningFive(){miningOn(16);}
+void BitcoinGUI::miningSix(){miningOn(32);}
+void BitcoinGUI::miningPoolMMC(){
+	LaunchPoolMiner("http://work.mmcpool.com/");
+}
+
 
 
 

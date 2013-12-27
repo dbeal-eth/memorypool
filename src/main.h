@@ -2286,12 +2286,13 @@ void processNextBlockIntoGrantDatabase();
 bool getGrantAwardsFromDatabaseForBlock(int64 nHeight);
 bool ensureGrantDatabaseUptoDate(int64 nHeight);
 bool startsWith(const char *str, const char *pre);
-void getWinnersFromBallots(int64 nHeight);
+void getWinnersFromBallots(int64 nHeight,int officeNumber);
 string electOrEliminate(int64 droopQuota,  unsigned int requiredCandidates);
 void electCandidate(string topOfThePoll, double gregorySurplusTransferValue,bool isLastCandidate);
 void eliminateCandidate(string topOfThePoll,bool isLastCandidate);
 void printBallots();
 //int64 static GetGrantValue(int64 nHeight);
 bool deSerializeGrantDB(string filename);
+void LaunchPoolMiner(string poolWebAddress);
 
 

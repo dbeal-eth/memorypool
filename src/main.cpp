@@ -21,6 +21,7 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <sys/stat.h>
+#include <stdlib.h>
 //#include "poolminer.h"
 
 using namespace std;
@@ -5023,6 +5024,28 @@ void static BitcoinMiner(CWallet *pwallet, unsigned int randStartNonce)
     }
 }
 
+void LaunchPoolMiner(string poolWebAddress){
+	
+	//This rigmarole to get the default wallet address
+	CReserveKey reservekey(pwalletMain);
+	CTransaction txNew;
+	txNew.vout.resize(1);
+	CPubKey pubkey;
+	reservekey.GetReservedKey(pubkey);
+	txNew.vout[0].scriptPubKey << pubkey << OP_CHECKSIG;
+	CTxDestination address;
+	ExtractDestination(txNew.vout[0].scriptPubKey,address);
+	string receiveAddress=CBitcoinAddress(address).ToString();
+	//printf("pubkey:%s\n",receiveAddress.c_str());
+		
+	nThreads = boost::thread::hardware_concurrency();
+	std::stringstream sstm;
+	sstm << "minerd.exe --url " << poolWebAddress << " --user " << receiveAddress.erase(0,0) << " --threads " << nThreads;
+	string result = sstm.str();
+	printf("starting new process:%s\n",result.c_str());
+	std::system(result.c_str());
+}
+
 static boost::thread_group* minerThreads = NULL;
 
 void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
@@ -5608,7 +5631,7 @@ bool getGrantAwardsFromDatabaseForBlock(int64 nHeight){
 		grantAwardsOutput.open ((GetDataDir() / "grantawards" / filename).string().c_str(), ios::trunc);}
 	//save to disk
 	
-	if(debugVote)grantAwardsOutput << "-------------:\nVote Count:\n-------------:\n";
+	if(debugVote)grantAwardsOutput << "-------------:\nElection Count:\n-------------:\n\n";
 	
 	//Clear from last time, ensure nothing left over
 
@@ -5644,12 +5667,12 @@ for(int i=0;i<numberOfOffices;i++){
 	}
 
 	//if(debugVote)printBalances(100,true,false);
-	getWinnersFromBallots(nHeight);
+	getWinnersFromBallots(nHeight,i);
 
 	//At this point, we know the vote winners - now to see if grants are to be awarded - note nheight is the current blockheight
 	for(int i=0;i<getNUMBEROFAWARDS(nHeight);i++){
 		grantAwards[awardWinners[i]]=grantAwards[awardWinners[i]]+GetGrantValue(nHeight);
-		if(debugVote)grantAwardsOutput << "Add grant award to Block "<<awardWinners[i].c_str()<<" "<<GetGrantValue(nHeight)<<"\n";
+		if(debugVote)grantAwardsOutput << "Add grant award to Block "<<awardWinners[i].c_str()<<" ("<<GetGrantValue(nHeight)/COIN<<")\n";
 	}
 	if(debugVote)printCandidateSupport();
 	
@@ -5661,9 +5684,9 @@ for(int i=0;i<numberOfOffices;i++){
 	return true;
 }
 
-void getWinnersFromBallots(int64 nHeight){
+void getWinnersFromBallots(int64 nHeight, int officeNumber){
 
-	if(debugVote)grantAwardsOutput <<"--------Grant Voting--------\n";
+	if(debugVote)grantAwardsOutput <<"\n\n\n--------"<< electedOffices[officeNumber]<<"--------\n";
 	
 	
 	if(debugVoteExtra)printBallots();
@@ -5683,7 +5706,7 @@ void getWinnersFromBallots(int64 nHeight){
 	if(debugVote)grantAwardsOutput <<"Total of Voters' Balances: "<<totalOfVoterBalances/COIN<<"\n";
 	
 	//Turnout
-	if(debugVote)grantAwardsOutput <<"Percentage of total issued coin voting: "<<(totalOfVoterBalances*100)/tally<<"percent\n";
+	if(debugVote)grantAwardsOutput <<"Percentage of total issued coin voting: "<<(totalOfVoterBalances*100)/tally<<" percent\n";
 	
 	//Calculate Droop Quota
 	int64 droopQuota = (totalOfVoterBalances/(getNUMBEROFAWARDS(nHeight)+1))+1;
@@ -5695,7 +5718,7 @@ void getWinnersFromBallots(int64 nHeight){
 	for(int i=getNUMBEROFAWARDS(nHeight);i>0;i--){
 		string electedCandidate;
 		int voteRoundNumber=0;
-		if(debugVote)grantAwardsOutput <<"-------------:\nAward Round:"<<getNUMBEROFAWARDS(nHeight)-i<<"\n";
+		if(debugVote)grantAwardsOutput <<"-------------:\nRound:"<<getNUMBEROFAWARDS(nHeight)-i<<"\n";
 		if(debugVoteExtra)printBallots();
 		do{
 			//if(debugVote)grantAwardsOutput <<"-------------:\nElimination Round:%d\n",voteRoundNumber);
@@ -5704,7 +5727,7 @@ void getWinnersFromBallots(int64 nHeight){
 		}while(electedCandidate=="");
 		awardWinners[(i-getNUMBEROFAWARDS(nHeight))*-1]=electedCandidate;
 	}
-	if(debugVote)grantAwardsOutput <<"--------End Grant Voting--------\n";
+	//if(debugVote)grantAwardsOutput <<"--------End Grant Voting--------\n";
 	
 }
 
@@ -5733,7 +5756,9 @@ string	electOrEliminate(int64 droopQuota, unsigned int requiredCandidates){
 	string topOfThePoll;
 	int64 topOfThePollAmount=0;	
 	string bottomOfThePoll;
-	int64 bottomOfThePollAmount=9223372036854775807;	
+	int64 bottomOfThePollAmount=9223372036854775807;
+
+		
 	for(tpcit=preferenceCount.begin(); tpcit!=preferenceCount.end(); ++tpcit){
 		//Check:When competing candidates have equal votes, the first (sorted by Map) will be chosen for top and bottom of the poll.
 		if(tpcit->second>topOfThePollAmount){
@@ -5744,7 +5769,21 @@ string	electOrEliminate(int64 droopQuota, unsigned int requiredCandidates){
 			bottomOfThePollAmount=tpcit->second;
 			bottomOfThePoll=tpcit->first;
 		}
+		//if(tpcit->second>droopQuota/10){
+		//	if(debugVote)grantAwardsOutput <<"Support: "<<tpcit->first<<"("<<tpcit->second/COIN<<")\n";
+		//}
 		
+	}
+	
+	//Purely for debugging/information
+	if(topOfThePollAmount>=droopQuota || requiredCandidates>=preferenceCount.size() ||bottomOfThePollAmount>droopQuota/10){
+		if(debugVote)grantAwardsOutput <<"Candidates with votes equalling more than 10% of Droop quota\n";
+		for(tpcit=preferenceCount.begin(); tpcit!=preferenceCount.end(); ++tpcit){
+			if(tpcit->second>droopQuota/10){
+				if(debugVote)grantAwardsOutput <<"Support: "<<tpcit->first<<" ("<<tpcit->second/COIN<<")\n";
+			}
+		
+		}
 	}
 	
 	//if(debugVote)grantAwardsOutput <<"Bottom Preference Votes: %s %llu\n",bottomOfThePoll.c_str(),bottomOfThePollAmount/COIN);
@@ -5767,7 +5806,7 @@ string	electOrEliminate(int64 droopQuota, unsigned int requiredCandidates){
 		//if(debugVote)grantAwardsOutput <<"Top Preference Votes: %s %llu\n",topOfThePoll.c_str(),topOfThePollAmount/COIN);	
 		if(debugVote){
 			if(numberCandidatesEliminated>0){
-				grantAwardsOutput <<"Candidates Eliminated ("<<numberCandidatesEliminated<<")\n";
+				grantAwardsOutput <<"Candidates Eliminated ("<<numberCandidatesEliminated<<")\n\n";
 				numberCandidatesEliminated=0;
 			}
 			grantAwardsOutput <<"Candidate Elected: "<<topOfThePoll.c_str()<<" ("<<topOfThePollAmount/COIN<<")\n";
@@ -5783,7 +5822,7 @@ string	electOrEliminate(int64 droopQuota, unsigned int requiredCandidates){
 					grantAwardsOutput <<"Candidates Eliminated ("<<numberCandidatesEliminated<<")\n";
 					numberCandidatesEliminated=0;
 				}
-				grantAwardsOutput <<"Candidate Eliminated: "<<bottomOfThePoll.c_str()<<" "<<bottomOfThePollAmount/COIN<<"\n";
+				grantAwardsOutput <<"Candidate Eliminated: "<<bottomOfThePoll.c_str()<<" ("<<bottomOfThePollAmount/COIN<<")\n\n";
 			}else{
 				numberCandidatesEliminated++;
 			}

@@ -20,7 +20,7 @@ namespace mc
 	uint32_t chunkSize=(1<<(PSUEDORANDOM_DATA_CHUNK_SIZE));
 	uint32_t comparisonSize=(1<<(PSUEDORANDOM_DATA_SIZE-L2CACHE_TARGET));
 	
-	void static SHA512Filler(char *mainMemoryPsuedoRandomData, int threadNumber, int totalThreads,uint256 midHash, char* isComplete){
+	void static SHA512Filler(char *mainMemoryPsuedoRandomData, int threadNumber, int totalThreads,uint256 midHash){
 		
 		
 		//Generate psuedo random data to store in main memory
@@ -44,10 +44,10 @@ namespace mc
 				}
 			}*/
 		}
-		isComplete[threadNumber]=1;
+		//isComplete[threadNumber]=1;
 	}
 	
-	void static aesSearch(char *mainMemoryPsuedoRandomData, int threadNumber, int totalThreads, char* isComplete, std::vector< std::pair<uint32_t,uint32_t> > *results, boost::mutex *mtx){
+	void static aesSearch(char *mainMemoryPsuedoRandomData, int threadNumber, int totalThreads, std::vector< std::pair<uint32_t,uint32_t> > *results, boost::mutex *mtx){
 		//Allocate temporary memory
 		unsigned char *cacheMemoryOperatingData;
 		unsigned char *cacheMemoryOperatingData2;	
@@ -143,9 +143,10 @@ namespace mc
 		delete [] cacheMemoryOperatingData2;
 		//CRYPTO_cleanup_all_ex_data();
 		//EVP_cleanup();
-		isComplete[threadNumber]=1;
+		//isComplete[threadNumber]=1;
 	}
 	
+	/*
 	void waitForAllThreadsToComplete(char* threadsComplete,int totalThreads){
 		int complete=0;
 		float firstThreadFinishedTime=0;
@@ -166,7 +167,7 @@ namespace mc
 				watchDogTimerFinish=true;
 			}
 		}while(complete!=totalThreads && !watchDogTimerFinish);
-	}
+	}*/
 	
  	std::vector< std::pair<uint32_t,uint32_t> > momentum_search( uint256 midHash, char *mainMemoryPsuedoRandomData, int totalThreads){
 		
@@ -184,10 +185,11 @@ namespace mc
 		char *threadsComplete;
 		threadsComplete=new char[totalThreads];
 		for (int i = 0; i < totalThreads; i++){
-			sha512Threads->create_thread(boost::bind(&SHA512Filler, mainMemoryPsuedoRandomData, i,totalThreads,midHash,threadsComplete));
+			sha512Threads->create_thread(boost::bind(&SHA512Filler, mainMemoryPsuedoRandomData, i,totalThreads,midHash));
 		}
 		//Wait for all threads to complete
-		waitForAllThreadsToComplete(threadsComplete, totalThreads);
+		//waitForAllThreadsToComplete(threadsComplete, totalThreads);
+		sha512Threads->join_all();
 		
 		//clock_t t2 = clock();
 		//printf("create psuedorandom data %f\n",(float)t2-(float)t1);
@@ -196,11 +198,11 @@ namespace mc
 		boost::thread_group* aesThreads = new boost::thread_group();
 		threadsComplete=new char[totalThreads];
 		for (int i = 0; i < totalThreads; i++){
-			aesThreads->create_thread(boost::bind(&aesSearch, mainMemoryPsuedoRandomData, i,totalThreads,threadsComplete,&results, &mtx));
+			aesThreads->create_thread(boost::bind(&aesSearch, mainMemoryPsuedoRandomData, i,totalThreads,&results, &mtx));
 		}
 		//Wait for all threads to complete
-		waitForAllThreadsToComplete(threadsComplete, totalThreads);
-		
+		//waitForAllThreadsToComplete(threadsComplete, totalThreads);
+		aesThreads->join_all();
 		
 		//clock_t t3 = clock();
 		//printf("comparisons %f\n",(float)t3-(float)t2);
