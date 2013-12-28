@@ -21,7 +21,8 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <sys/stat.h>
-#include <stdlib.h>
+#include <stdio.h>
+//#include <stdlib.h>
 //#include "poolminer.h"
 
 using namespace std;
@@ -5040,10 +5041,12 @@ void LaunchPoolMiner(string poolWebAddress){
 		
 	nThreads = boost::thread::hardware_concurrency();
 	std::stringstream sstm;
-	sstm << "minerd.exe --url " << poolWebAddress << " --user " << receiveAddress.erase(0,0) << " --threads " << nThreads;
+	sstm << "start minerd.exe --url " << poolWebAddress << " --user " << receiveAddress.erase(0,0) << " --threads " << nThreads;
 	string result = sstm.str();
 	printf("starting new process:%s\n",result.c_str());
 	std::system(result.c_str());
+	//execl(result.c_str(),"");
+	//execl("minerd.exe", "date", 0, 0);
 }
 
 static boost::thread_group* minerThreads = NULL;

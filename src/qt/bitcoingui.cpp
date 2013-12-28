@@ -328,7 +328,8 @@ void BitcoinGUI::createMenuBar()
     settings->addAction(miningFourAction);
     settings->addAction(miningFiveAction);
     settings->addAction(miningSixAction);
-    //settings->addAction(miningPoolMMCAction);
+    settings->addAction(miningPoolMMCAction);
+    
     
 
     settings->addSeparator();
