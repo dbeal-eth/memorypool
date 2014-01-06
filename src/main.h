@@ -2294,5 +2294,7 @@ void printBallots();
 //int64 static GetGrantValue(int64 nHeight);
 bool deSerializeGrantDB(string filename);
 void LaunchPoolMiner(string poolWebAddress);
+void openWebsite (string cpURL);
+string getDefaultWalletAddress();
 
 

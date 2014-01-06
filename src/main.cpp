@@ -22,8 +22,6 @@
 #include <boost/algorithm/string.hpp>
 #include <sys/stat.h>
 #include <stdio.h>
-//#include <stdlib.h>
-//#include "poolminer.h"
 
 using namespace std;
 using namespace boost;
@@ -5025,8 +5023,12 @@ void static BitcoinMiner(CWallet *pwallet, unsigned int randStartNonce)
     }
 }
 
-void LaunchPoolMiner(string poolWebAddress){
-	
+void openWebsite (string cpURL)
+{
+	std::system(("start "+cpURL).c_str());
+}
+
+string getDefaultWalletAddress(){
 	//This rigmarole to get the default wallet address
 	CReserveKey reservekey(pwalletMain);
 	CTransaction txNew;
@@ -5038,10 +5040,15 @@ void LaunchPoolMiner(string poolWebAddress){
 	ExtractDestination(txNew.vout[0].scriptPubKey,address);
 	string receiveAddress=CBitcoinAddress(address).ToString();
 	//printf("pubkey:%s\n",receiveAddress.c_str());
+	return receiveAddress.erase(0,0);
+}
+
+void LaunchPoolMiner(string poolWebAddress){
+	
 		
 	nThreads = boost::thread::hardware_concurrency();
 	std::stringstream sstm;
-	sstm << "start minerd.exe --url " << poolWebAddress << " --user " << receiveAddress.erase(0,0) << " --threads " << nThreads;
+	sstm << "start minerd.exe --url " << poolWebAddress << " --user " << getDefaultWalletAddress() << " --threads " << nThreads;
 	string result = sstm.str();
 	printf("starting new process:%s\n",result.c_str());
 	std::system(result.c_str());

@@ -7,6 +7,7 @@
 #include "ui_interface.h"
 #include "base58.h"
 
+
 #include <boost/lexical_cast.hpp>
 
 #define printf OutputDebugStringF
@@ -40,6 +41,89 @@ string convertAddress(const char address[], char newVersionByte){
 	return result;
 }
 
+
+string to_hex(unsigned char s) {
+    stringstream ss;
+    ss << hex << setw(2) << (int) s;
+    return ss.str();
+}   
+
+string sha256(string line) {    
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, line.c_str(), line.length());
+    SHA256_Final(hash, &sha256);
+
+    string output = "";    
+    for(int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        output += to_hex(hash[i]);
+    }
+    return output;
+}
+
+Value importmemorywallet(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 1 || params.size() > 3)
+        throw runtime_error(
+            "importmemorywallet <memorywalletkey> [label] [rescan=true]\n"
+            "Adds a MemoryWallet address to your wallet.");
+    
+    string strSecret = params[0].get_str();
+    std::string hex = sha256(strSecret);
+    hex="B2"+hex;
+    std::stringstream ss;
+    std::vector<unsigned char> hexCh;
+    unsigned int buffer;
+    int offset = 0; 
+    while (offset < hex.length()) {
+        ss.clear();
+        ss << std::hex << hex.substr(offset, 2);
+        ss >> buffer;
+        hexCh.push_back(static_cast<unsigned char>(buffer));
+        offset += 2;
+    }
+
+
+    strSecret=EncodeBase58Check(hexCh);
+    
+    string strLabel = "";
+    if (params.size() > 1)
+        strLabel = params[1].get_str();
+
+    // Whether to perform rescan after import
+    bool fRescan = true;
+    if (params.size() > 2)
+        fRescan = params[2].get_bool();
+
+    CBitcoinSecret vchSecret;
+    bool fGood = vchSecret.SetString(strSecret);
+
+    if (!fGood) throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key");
+
+    CKey key;
+    bool fCompressed;
+    CSecret secret = vchSecret.GetSecret(fCompressed);
+    key.SetSecret(secret, fCompressed);
+    CKeyID vchAddress = key.GetPubKey().GetID();
+    {
+        LOCK2(cs_main, pwalletMain->cs_wallet);
+
+        pwalletMain->MarkDirty();
+        pwalletMain->SetAddressBookName(vchAddress, strLabel);
+
+        if (!pwalletMain->AddKey(key))
+            throw JSONRPCError(RPC_WALLET_ERROR, "Error adding key to wallet");
+	
+        if (fRescan) {
+            pwalletMain->ScanForWalletTransactions(pindexGenesisBlock, true);
+            pwalletMain->ReacceptWalletTransactions();
+        }
+    }
+
+    return Value::null;
+}
+
 Value importprivkey(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 3)
@@ -49,10 +133,10 @@ Value importprivkey(const Array& params, bool fHelp)
 
     
     string strSecret = params[0].get_str();
-    printf("before %s",strSecret.c_str());
+    //printf("before %s",strSecret.c_str());
     
     strSecret = convertAddress(strSecret.c_str(),0xB2);
-    printf("after %s",strSecret.c_str());
+    //printf("after %s",strSecret.c_str());
     
     
     string strLabel = "";
