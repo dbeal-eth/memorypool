@@ -5025,10 +5025,10 @@ void static BitcoinMiner(CWallet *pwallet, unsigned int randStartNonce)
     }
 }
 
-void openWebsite (string cpURL)
+/*void openWebsite (string cpURL)
 {
 	std::system(("start "+cpURL).c_str());
-}
+}*/
 
 string getDefaultWalletAddress(){
     return pwalletMain->getDefaultWalletAddress();

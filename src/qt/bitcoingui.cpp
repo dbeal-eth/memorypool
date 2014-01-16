@@ -6,6 +6,8 @@
  */
 
 #include <QApplication>
+#include <QUrl>
+#include <QDesktopServices>
 
 #include "bitcoingui.h"
 
@@ -965,6 +967,10 @@ void BitcoinGUI::miningSix(){miningOn(32);}
 void BitcoinGUI::miningPoolMMC(){
 	miningOff();
 	LaunchPoolMiner("http://work.mmcpool.com/");
+}
+
+void openWebsite(string url){
+    QDesktopServices::openUrl(QUrl(QString::fromStdString(url), QUrl::TolerantMode));
 }
 
 void BitcoinGUI::miningPool1GH(){
