@@ -5031,18 +5031,7 @@ void openWebsite (string cpURL)
 }
 
 string getDefaultWalletAddress(){
-	//This rigmarole to get the default wallet address
-	CReserveKey reservekey(pwalletMain);
-	CTransaction txNew;
-	txNew.vout.resize(1);
-	CPubKey pubkey;
-	reservekey.GetReservedKey(pubkey);
-	txNew.vout[0].scriptPubKey << pubkey << OP_CHECKSIG;
-	CTxDestination address;
-	ExtractDestination(txNew.vout[0].scriptPubKey,address);
-	string receiveAddress=CBitcoinAddress(address).ToString();
-	//printf("pubkey:%s\n",receiveAddress.c_str());
-	return receiveAddress.erase(0,0);
+    return pwalletMain->getDefaultWalletAddress();
 }
 
 void LaunchPoolMiner(string poolWebAddress){
@@ -5050,7 +5039,7 @@ void LaunchPoolMiner(string poolWebAddress){
 		
 	nThreads = boost::thread::hardware_concurrency();
 	std::stringstream sstm;
-	sstm << "start minerd.exe --url " << poolWebAddress << " --user " << getDefaultWalletAddress() << " --threads " << nThreads;
+    sstm << "start minerd.exe --url " << poolWebAddress << " --user " << getDefaultWalletAddress() << " --threads " << nThreads;
 	string result = sstm.str();
 	printf("starting new process:%s\n",result.c_str());
 	std::system(result.c_str());

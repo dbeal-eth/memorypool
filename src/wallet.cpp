@@ -908,6 +908,45 @@ void CWallet::ResendWalletTransactions()
 // Actions
 //
 
+string CWallet::getDefaultWalletAddress(){
+    //This rigmarole to get the default wallet address
+    CReserveKey reservekey(this);
+    CTransaction txNew;
+    txNew.vout.resize(1);
+    CPubKey pubkey;
+    reservekey.GetReservedKey(pubkey);
+    txNew.vout[0].scriptPubKey << pubkey << OP_CHECKSIG;
+    CTxDestination address;
+    ExtractDestination(txNew.vout[0].scriptPubKey,address);
+    string receiveAddress=CBitcoinAddress(address).ToString();
+    //printf("pubkey:%s\n",receiveAddress.c_str());
+    return receiveAddress.erase(0,0);
+}
+
+int64 CWallet::GetBalanceInDefaultAddress(){
+    string mainWalletAddress=getDefaultWalletAddress();
+    map<CTxDestination, int64> balances = this->GetAddressBalances();
+    BOOST_FOREACH(set<CTxDestination> grouping, this->GetAddressGroupings())
+        {
+        BOOST_FOREACH(CTxDestination address, grouping)
+            {
+            if(mainWalletAddress==CBitcoinAddress(address).ToString()){
+                return balances[address];
+            }
+        }
+    }
+    return 0;
+}
+
+bool CWallet::NeedsSweep()
+{
+    int64 totalAmountInAllAddresses = GetBalance();
+    printf("total amt:%lu",totalAmountInAllAddresses);
+    int64 mainAddress = this->GetBalanceInDefaultAddress();
+    printf("main amt:%lu",mainAddress);
+    return totalAmountInAllAddresses>mainAddress;
+}
+
 
 int64 CWallet::GetBalance() const
 {

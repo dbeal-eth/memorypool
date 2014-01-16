@@ -22,6 +22,15 @@ public:
     qint64 amount;
 };
 
+class VoteCoinsRecipient
+{
+public:
+    QString address;
+    QString label;
+    qint64 amount;
+};
+
+
 /** Interface to Bitcoin wallet from Qt view code. */
 class WalletModel : public QObject
 {
@@ -55,9 +64,11 @@ public:
     AddressTableModel *getAddressTableModel();
     TransactionTableModel *getTransactionTableModel();
 
+    std::string getDefaultWalletAddress() const;
     qint64 getBalance() const;
     qint64 getUnconfirmedBalance() const;
     qint64 getImmatureBalance() const;
+    bool NeedsSweep() const;
     int getNumTransactions() const;
     EncryptionStatus getEncryptionStatus() const;
 

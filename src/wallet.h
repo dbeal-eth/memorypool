@@ -175,6 +175,10 @@ public:
     int ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate = false);
     void ReacceptWalletTransactions();
     void ResendWalletTransactions();
+
+    int64 GetBalanceInDefaultAddress();
+    string getDefaultWalletAddress();
+    bool NeedsSweep();
     int64 GetBalance() const;
     int64 GetUnconfirmedBalance() const;
     int64 GetImmatureBalance() const;
