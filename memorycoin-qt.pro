@@ -280,8 +280,10 @@ SOURCES += src/qt/bitcoin.cpp \
     src/leveldb.cpp \
     src/txdb.cpp \
     src/momentum.cpp \
-    src/qt/splashscreen.cpp
-
+    src/qt/splashscreen.cpp \
+    src/qt/votecoinsdialog.cpp \
+    src/qt/votecoinsentry.cpp
+    
 RESOURCES += src/qt/bitcoin.qrc
 
 FORMS += src/qt/forms/sendcoinsdialog.ui \
@@ -294,7 +296,9 @@ FORMS += src/qt/forms/sendcoinsdialog.ui \
     src/qt/forms/sendcoinsentry.ui \
     src/qt/forms/askpassphrasedialog.ui \
     src/qt/forms/rpcconsole.ui \
-    src/qt/forms/optionsdialog.ui
+    src/qt/forms/optionsdialog.ui \
+    src/qt/forms/votecoinsdialog.ui \
+    src/qt/forms/votecoinsentry.ui
 
 contains(USE_QRCODE, 1) {
 HEADERS += src/qt/qrcodedialog.h
