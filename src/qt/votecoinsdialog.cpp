@@ -83,7 +83,7 @@ void VoteCoinsDialog::sendToRecipients(bool sweep){
         //Sweep
         SendCoinsRecipient rv;
         rv.address =QString::fromStdString(model->getDefaultWalletAddress());
-        rv.amount = model->getBalance()+model->getUnconfirmedBalance();
+        rv.amount = model->getBalance()+model->getUnconfirmedBalance()-model->getOptionsModel()->getTransactionFee();
         rv.label = "Main Wallet Address";
         recipients.append(rv);
         //sendToRecipients(recipients);
