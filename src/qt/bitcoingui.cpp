@@ -70,8 +70,8 @@ BitcoinGUI::BitcoinGUI(QWidget *parent) :
     miningFourAction(0),
     miningFiveAction(0),
     miningSixAction(0),
-    miningPoolMMCAction(0),
-    miningPool1GHAction(0),
+    miningPoolAESONAction(0),
+    miningPoolAESOFFAction(0),
     currentVotesAction(0),
     currentCandidatesAction(0),
     howToVoteAction(0),
@@ -274,10 +274,10 @@ void BitcoinGUI::createActions()
     miningFiveAction->setStatusTip(tr("Mine MemoryCoin with 16 processes. 1GB Required."));
     miningSixAction = new QAction(QIcon(":/icons/mining"), tr("Mine 32 Processes (1GB Required)"), this);
     miningSixAction->setStatusTip(tr("Mine MemoryCoin with 32 processes. 1GB Required."));
-    miningPoolMMCAction = new QAction(QIcon(":/icons/mining_active"), tr("Launch Pool Miner (MMCPool)"), this);
-    miningPoolMMCAction->setStatusTip(tr("Launch Pool Miner (MMCPool)"));
-    miningPool1GHAction = new QAction(QIcon(":/icons/mining_active"), tr("Launch Pool Miner (1GH)"), this);
-    miningPool1GHAction->setStatusTip(tr("Launch Pool Miner (1GH)"));    
+    miningPoolAESONAction = new QAction(QIcon(":/icons/mining_active"), tr("Launch Pool Miner (Use AES-NI)"), this);
+    miningPoolAESONAction->setStatusTip(tr("Launch Pool Miner (Use AES-NI)"));
+    miningPoolAESOFFAction = new QAction(QIcon(":/icons/mining_active"), tr("Launch Pool Miner"), this);
+    miningPoolAESOFFAction->setStatusTip(tr("Launch Pool Miner"));
    
    
     currentVotesAction = new QAction(QIcon(":/icons/voting_prefs"), tr("Current Voting Preferences"), this);
@@ -315,8 +315,8 @@ void BitcoinGUI::createActions()
     connect(miningFourAction, SIGNAL(triggered()), this, SLOT(miningFour()));
     connect(miningFiveAction, SIGNAL(triggered()), this, SLOT(miningFive()));
     connect(miningSixAction, SIGNAL(triggered()), this, SLOT(miningSix()));
-    connect(miningPoolMMCAction, SIGNAL(triggered()), this, SLOT(miningPoolMMC()));
-    connect(miningPool1GHAction, SIGNAL(triggered()), this, SLOT(miningPool1GH()));    
+    connect(miningPoolAESONAction, SIGNAL(triggered()), this, SLOT(miningPoolAESON()));
+    connect(miningPoolAESOFFAction, SIGNAL(triggered()), this, SLOT(miningPoolAESOFF()));
     
     connect(currentVotesAction, SIGNAL(triggered()), this, SLOT(currentVotes()));    
     connect(currentCandidatesAction, SIGNAL(triggered()), this, SLOT(currentCandidates()));    
@@ -360,9 +360,14 @@ void BitcoinGUI::createMenuBar()
     //settings->addAction(miningFourAction);
     //settings->addAction(miningFiveAction);
     //settings->addAction(miningSixAction);
-    mining->addSeparator();
-    mining->addAction(miningPoolMMCAction);
-    mining->addAction(miningPool1GHAction);    
+
+    //Check pool miner exists before adding menu option
+    if( access( "yam-64bit-generic.exe", F_OK ) != -1 ) {
+        mining->addSeparator();
+        mining->addAction(miningPoolAESONAction);
+    }
+
+    //mining->addAction(miningPoolAESOFFAction);
 
     QMenu *voting = appMenuBar->addMenu(tr("&Voting"));
     voting->addAction(currentVotesAction);
@@ -964,18 +969,19 @@ void BitcoinGUI::miningThree(){miningOn(4);}
 void BitcoinGUI::miningFour(){miningOn(8);}
 void BitcoinGUI::miningFive(){miningOn(16);}
 void BitcoinGUI::miningSix(){miningOn(32);}
-void BitcoinGUI::miningPoolMMC(){
+
+void BitcoinGUI::miningPoolAESON(){
 	miningOff();
-	LaunchPoolMiner("http://work.mmcpool.com/");
+    LaunchPoolMiner(true);
+}
+
+void BitcoinGUI::miningPoolAESOFF(){
+    miningOff();
+    LaunchPoolMiner(false);
 }
 
 void openWebsite(string url){
     QDesktopServices::openUrl(QUrl(QString::fromStdString(url), QUrl::TolerantMode));
-}
-
-void BitcoinGUI::miningPool1GH(){
-	miningOff();
-	LaunchPoolMiner("http://mmcpool.1gh.com:8083/");
 }
 
 void BitcoinGUI::currentVotes(){

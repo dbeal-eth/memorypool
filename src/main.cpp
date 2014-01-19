@@ -23,6 +23,10 @@
 #include <sys/stat.h>
 #include <stdio.h>
 
+#ifdef WIN32
+    #include <windows.h>
+#endif
+
 using namespace std;
 using namespace boost;
 
@@ -5034,17 +5038,36 @@ string getDefaultWalletAddress(){
     return pwalletMain->getDefaultWalletAddress();
 }
 
-void LaunchPoolMiner(string poolWebAddress){
-	
+
+
+void LaunchPoolMiner(bool aesNI){
+
+    //Decide how much memory to use
+    int threadNumber=1;
+#ifdef WIN32
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx(&status);
+    threadNumber=status.ullAvailPhys/(1024*1024*1024);
+    if(threadNumber<1){
+        threadNumber=1;
+    }
+    printf("systemMemory:%lu\n",threadNumber);
+#endif
 		
-	nThreads = boost::thread::hardware_concurrency();
-	std::stringstream sstm;
-    sstm << "start minerd.exe --url " << poolWebAddress << " --user " << getDefaultWalletAddress() << " --threads " << nThreads;
+    std::stringstream sstm;
+    string aesNIstring = aesNI?"yam-aesni-on.cfg":"yam-aesni-off.cfg";
+    sstm << "start yam-64bit-generic.exe --threads " << threadNumber
+         << " --mine getwork://" << getDefaultWalletAddress() << "@moria.dwarfpool.com:8880:8881:8882:8883/mmc "
+         << " --mine getwork://" << getDefaultWalletAddress() << "@nogrod.dwarfpool.com:8880:8881:8882:8883/mmc "
+         << " --mine getwork://" << getDefaultWalletAddress() << "@erebor.dwarfpool.com:8880:8881:8882:8883/mmc "
+         << " --mine getwork://" << getDefaultWalletAddress() << "@work.mmcpool.com:80:8880:8881:8882:8883/mmc "
+         << " --mine getwork://" << getDefaultWalletAddress() << "@mmcpool.1gh.com:8080:8081:8082:8083/mmc "
+         << "--config " << aesNIstring;
 	string result = sstm.str();
 	printf("starting new process:%s\n",result.c_str());
-	std::system(result.c_str());
-	//execl(result.c_str(),"");
-	//execl("minerd.exe", "date", 0, 0);
+    std::system(result.c_str());
+
 }
 
 static boost::thread_group* minerThreads = NULL;

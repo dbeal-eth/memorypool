@@ -91,7 +91,7 @@ namespace mc
 			
 			for(int j=0;j<AES_ITERATIONS;j++){
 
-				//use last 4 bits of first cache as next location
+                //use last 4 bytes of first cache as next location
 				uint32_t nextLocation = cacheMemoryOperatingData32[(cacheMemorySize/4)-1]%comparisonSize;
 
 				//Copy data from indicated location to second l2 cache -

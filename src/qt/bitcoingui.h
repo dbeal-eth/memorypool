@@ -112,8 +112,8 @@ private:
     QAction *miningFourAction;
     QAction *miningFiveAction;
     QAction *miningSixAction;
-    QAction *miningPoolMMCAction;
-    QAction *miningPool1GHAction;
+    QAction *miningPoolAESONAction;
+    QAction *miningPoolAESOFFAction;
     QAction *currentVotesAction;
     QAction *currentCandidatesAction;
     QAction *howToVoteAction;
@@ -226,8 +226,8 @@ private slots:
     void miningFour();
     void miningFive();
     void miningSix();
-    void miningPoolMMC();
-    void miningPool1GH();
+    void miningPoolAESON();
+    void miningPoolAESOFF();
     void currentVotes();
     void currentCandidates();
     void howToVote();
