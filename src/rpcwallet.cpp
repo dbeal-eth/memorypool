@@ -175,7 +175,28 @@ Value getaccountaddress(const Array& params, bool fHelp)
     return ret;
 }
 
+Value setdefaultaddress(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+            "setdefaultaddress <memorycoinaddress>\n"
+            "Sets the main address for the wallet.");
 
+    CBitcoinAddress address(params[0].get_str());
+    if (!address.IsValid())
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid MemoryCoin address");
+
+    //Check wallet includes address
+    if(!IsMine(*pwalletMain, CBitcoinAddress(address).Get())){
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Address not present in the wallet. Import the address first.");
+    }
+
+    //Switch default key
+    pwalletMain->switchDefaultKey(params[0].get_str());
+
+    //require restart
+    return "You must now restart the software for the changes to take full effect.";
+}
 
 Value setaccount(const Array& params, bool fHelp)
 {

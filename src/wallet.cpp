@@ -941,9 +941,9 @@ int64 CWallet::GetBalanceInDefaultAddress(){
 bool CWallet::NeedsSweep()
 {
     int64 totalAmountInAllAddresses = GetBalance();
-    printf("total amt:%lu",totalAmountInAllAddresses);
+    //printf("total amt:%lu",totalAmountInAllAddresses);
     int64 mainAddress = this->GetBalanceInDefaultAddress();
-    printf("main amt:%lu",mainAddress);
+    //printf("main amt:%lu",mainAddress);
     return totalAmountInAllAddresses>mainAddress;
 }
 
@@ -1515,6 +1515,21 @@ bool CWallet::GetTransaction(const uint256 &hashTx, CWalletTx& wtx)
     return false;
 }
 
+bool CWallet::switchDefaultKey(const string newAddress){
+    CBitcoinAddress address(newAddress);
+    if (address.IsValid()){
+        CKeyID keyID;
+        if (!address.GetKeyID(keyID))
+            throw runtime_error(strprintf("%s does not refer to a key",newAddress.c_str()));
+        CPubKey vchPubKey;
+        if (!GetPubKey(keyID, vchPubKey))
+            throw runtime_error(strprintf("no full public key for address %s",newAddress.c_str()));
+        SetDefaultKey(vchPubKey);
+        return true;
+    }
+    return false;
+}
+
 bool CWallet::SetDefaultKey(const CPubKey &vchPubKey)
 {
     if (fFileBacked)
@@ -1822,9 +1837,9 @@ bool CReserveKey::GetReservedKey(CPubKey& pubkey)
 {
     if (nIndex == -1)
     {
-        CKeyPool keypool;
+        /*CKeyPool keypool;
         pwallet->ReserveKeyFromKeyPool(nIndex, keypool);
-        /*if (nIndex != -1)
+        if (nIndex != -1)
             vchPubKey = keypool.vchPubKey;
         else {
             if (pwallet->vchDefaultKey.IsValid()) {
