@@ -7,6 +7,7 @@
 #include "editaddressdialog.h"
 #include "csvmodelwriter.h"
 #include "guiutil.h"
+#include "main.h"
 
 #ifdef USE_QRCODE
 #include "qrcodedialog.h"
@@ -61,7 +62,7 @@ AddressBookPage::AddressBookPage(Mode mode, Tabs tab, QWidget *parent) :
         break;
     case ReceivingTab:
         ui->labelExplanation->setText(tr("This is your MemoryCoin addresses for receiving payments."));
-        ui->newAddress->setVisible(false);
+        ui->newAddress->setVisible(fMultiAddress);
         ui->deleteAddress->setVisible(false);
         ui->signMessage->setVisible(true);
         break;

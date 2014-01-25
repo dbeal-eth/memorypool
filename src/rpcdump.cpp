@@ -121,7 +121,7 @@ Value importmemorywallet(const Array& params, bool fHelp)
         }
     }
 
-    return Value::null;
+    return "Imported Memory Wallet";
 }
 
 Value importprivkey(const Array& params, bool fHelp)
@@ -173,7 +173,7 @@ Value importprivkey(const Array& params, bool fHelp)
         }
     }
 
-    return Value::null;
+    return "Imported Private Key";
 }
 
 Value dumpprivkey(const Array& params, bool fHelp)

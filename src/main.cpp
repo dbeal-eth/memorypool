@@ -62,6 +62,7 @@ bool fImporting = false;
 bool fReindex = false;
 bool fBenchmark = false;
 bool fTxIndex = true;
+bool fMultiAddress = false;
 unsigned int nCoinCacheSize = 5000;
 
 /** Fees smaller than this (in satoshi) are considered zero fee (for transaction creation) */
@@ -3018,6 +3019,9 @@ bool LoadBlockIndex()
 
 
 bool InitBlockIndex() {
+
+    fMultiAddress = GetBoolArg("-multiaddress", false);
+
     // Check whether we're already initialized
     if (pindexGenesisBlock != NULL)
         return true;

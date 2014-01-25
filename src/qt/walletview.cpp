@@ -133,6 +133,8 @@ void WalletView::setWalletModel(WalletModel *walletModel)
 
         // Ask for passphrase if needed
         connect(walletModel, SIGNAL(requireUnlock()), this, SLOT(unlockWallet()));
+        this->gui->setWindowTitle(tr("MemoryCoin") + " - " + tr("Wallet") + " - " + walletModel->getDefaultWalletAddress().c_str());
+
     }
 }
 

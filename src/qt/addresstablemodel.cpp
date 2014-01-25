@@ -66,12 +66,11 @@ public:
                 const std::string& strName = item.second;
                 bool fMine = IsMine(*wallet, address.Get());
 
-                //printf("mainwalletadd:%s\n",mainAddress.c_str());
-                //printf("other:%s\n",strName.c_str());
-
-                //Only add to receiving table if it is the main address
-                if(fMine && mainAddress!=address.ToString()){
-                     continue;
+                if(!fMultiAddress){
+                    //Only add to receiving table if it is the main address
+                    if(fMine && mainAddress!=address.ToString()){
+                        continue;
+                    }
                 }
                 cachedAddressTable.append(AddressTableEntry(fMine ? AddressTableEntry::Receiving : AddressTableEntry::Sending,
                                   QString::fromStdString(strName),
