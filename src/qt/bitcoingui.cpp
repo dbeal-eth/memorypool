@@ -72,6 +72,9 @@ BitcoinGUI::BitcoinGUI(QWidget *parent) :
     miningSixAction(0),
     miningPoolAESONAction(0),
     miningPoolAESOFFAction(0),
+    balanceMMCAction(0),
+    balanceDwarfAction(0),
+    balance1GHAction(0),
     currentVotesAction(0),
     currentCandidatesAction(0),
     howToVoteAction(0),
@@ -278,8 +281,14 @@ void BitcoinGUI::createActions()
     miningPoolAESONAction->setStatusTip(tr("Launch Pool Miner (Use AES-NI)"));
     miningPoolAESOFFAction = new QAction(QIcon(":/icons/mining_active"), tr("Launch Pool Miner"), this);
     miningPoolAESOFFAction->setStatusTip(tr("Launch Pool Miner"));
-   
-   
+
+    balanceMMCAction = new QAction(QIcon(":/icons/coin"), tr("Pool Balance (MMCPool)"), this);
+    balanceMMCAction->setStatusTip(tr("Pool Balance (MMCPool))"));
+    balanceDwarfAction = new QAction(QIcon(":/icons/coin"), tr("Pool Balance (Dwarf Pool)"), this);
+    balanceDwarfAction->setStatusTip(tr("Pool Balance (Dwarf Pool))"));
+    balance1GHAction = new QAction(QIcon(":/icons/coin"), tr("Pool Balance (1GH Pool)"), this);
+    balance1GHAction->setStatusTip(tr("Pool Balance (1GH Pool))"));
+
     currentVotesAction = new QAction(QIcon(":/icons/voting_prefs"), tr("Current Voting Preferences"), this);
     currentVotesAction->setStatusTip(tr("Show who or what you are currently voting for. (Web)"));
     currentCandidatesAction = new QAction(QIcon(":/icons/voting_candidates"), tr("Current Candidates"), this);
@@ -318,6 +327,10 @@ void BitcoinGUI::createActions()
     connect(miningPoolAESONAction, SIGNAL(triggered()), this, SLOT(miningPoolAESON()));
     connect(miningPoolAESOFFAction, SIGNAL(triggered()), this, SLOT(miningPoolAESOFF()));
     
+    connect(balanceMMCAction, SIGNAL(triggered()), this, SLOT(balanceMMC()));
+    connect(balanceDwarfAction, SIGNAL(triggered()), this, SLOT(balanceDwarf()));
+    connect(balance1GHAction, SIGNAL(triggered()), this, SLOT(balance1GH()));
+
     connect(currentVotesAction, SIGNAL(triggered()), this, SLOT(currentVotes()));    
     connect(currentCandidatesAction, SIGNAL(triggered()), this, SLOT(currentCandidates()));    
     connect(howToVoteAction, SIGNAL(triggered()), this, SLOT(howToVote()));    
@@ -365,6 +378,10 @@ void BitcoinGUI::createMenuBar()
     if( access( "yam-64bit-generic.exe", F_OK ) != -1 ) {
         mining->addSeparator();
         mining->addAction(miningPoolAESONAction);
+        mining->addSeparator();
+        mining->addAction(balanceMMCAction);
+        mining->addAction(balanceDwarfAction);
+        mining->addAction(balance1GHAction);
     }
 
     //mining->addAction(miningPoolAESOFFAction);
@@ -998,4 +1015,16 @@ void BitcoinGUI::currentCandidates(){
 
 void BitcoinGUI::currentResults(){
 	openWebsite("http://mmcvotes.com/");
+}
+
+void BitcoinGUI::balanceMMC(){
+    openWebsite("http://mmcpool.com/en/user?wallet="+getDefaultWalletAddress());
+}
+
+void BitcoinGUI::balanceDwarf(){
+    openWebsite("http://dwarfpool.com/mmc/address?wallet="+getDefaultWalletAddress());
+}
+
+void BitcoinGUI::balance1GH(){
+    openWebsite("http://mmc.1gh.com/user?wallet="+getDefaultWalletAddress());
 }
