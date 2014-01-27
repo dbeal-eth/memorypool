@@ -23,9 +23,11 @@
 #include <sys/stat.h>
 #include <stdio.h>
 
+/*
 #ifdef WIN32
     #include <windows.h>
 #endif
+*/
 
 using namespace std;
 using namespace boost;
@@ -5044,10 +5046,10 @@ string getDefaultWalletAddress(){
 
 
 
-void LaunchPoolMiner(bool aesNI){
+void LaunchPoolMiner(){
 
     //Decide how much memory to use
-    int threadNumber=1;
+/*    int threadNumber=1;
 #ifdef WIN32
     MEMORYSTATUSEX status;
     status.dwLength = sizeof(status);
@@ -5057,15 +5059,14 @@ void LaunchPoolMiner(bool aesNI){
         threadNumber=1;
     }
     printf("systemMemory:%lu\n",threadNumber);
-#endif
-		
+#endif*/
+
+    bool aesNI=mc::hasAESNIInstructions();
     std::stringstream sstm;
     string aesNIstring = aesNI?"yam-aesni-on.cfg":"yam-aesni-off.cfg";
-    sstm << "start yam-64bit-generic.exe --threads " << threadNumber
+    sstm << "start yam-64bit-generic.exe "
+         << " --mine getwork://" << getDefaultWalletAddress() << "@work.mmcpool.com:8880:8881:8882:8883:80/mmc "
          << " --mine getwork://" << getDefaultWalletAddress() << "@moria.dwarfpool.com:8880:8881:8882:8883/mmc "
-         << " --mine getwork://" << getDefaultWalletAddress() << "@nogrod.dwarfpool.com:8880:8881:8882:8883/mmc "
-         << " --mine getwork://" << getDefaultWalletAddress() << "@erebor.dwarfpool.com:8880:8881:8882:8883/mmc "
-         << " --mine getwork://" << getDefaultWalletAddress() << "@work.mmcpool.com:80:8880:8881:8882:8883/mmc "
          << " --mine getwork://" << getDefaultWalletAddress() << "@mmcpool.1gh.com:8080:8081:8082:8083/mmc "
          << "--config " << aesNIstring;
 	string result = sstm.str();
@@ -5450,6 +5451,34 @@ int getOfficeNumberFromAddress(string grantVoteAddress){
 	return -1;
 }
 
+void printVotingPrefs(std::string address){
+    //I don't know why, this is compiling, but crashing
+    /*std::map<int64, std::string> thisBallot=ballots.find(address)->second;
+    if(thisBallot.begin()==thisBallot.end()){
+        printf("No Voting Preferences\n");
+        return;
+    }
+    int pref=1;
+    for(svpit4=thisBallot.begin();svpit4!=thisBallot.end();++svpit4){
+        printf("Preference: (%d) %llu %s \n",pref, svpit4->first/COIN,svpit4->second.c_str());
+        pref++;
+    }*/
+
+    //This is slow and iterates too much, but on the plus side it doesn't crash the program.
+    //This crash probably caused by eliminate candidate corrupting the ballot structure.
+    //Should be safe to use more efficient code after fork
+    int pref=1;
+    for(ballotit=ballots.begin(); ballotit!=ballots.end(); ++ballotit){
+        if(address==ballotit->first){
+            for(svpit4=ballotit->second.begin();svpit4!=ballotit->second.end();++svpit4){
+                grantAwardsOutput<<"--Preference "<<pref<<" "<<svpit4->first<<" "<<svpit4->second.c_str()<<" \n";
+                pref++;
+            }
+        }
+    }
+
+}
+
 void processNextBlockIntoGrantDatabase(){
 
 	//printf("processNextBlockIntoGrantDatabase %d\n",grantDatabaseBlockHeight+1);
@@ -5510,12 +5539,18 @@ void processNextBlockIntoGrantDatabase(){
 	
 				//If any of the outputs were votes
 				for(votesit=votes.begin(); votesit!=votes.end(); ++votesit){
-					printf("Vote found: %s, %llu\n",votesit->first.c_str(),votesit->second);
+                    printf("Vote found: %s, %llu\n",votesit->first.c_str(),votesit->second);
 					string grantVoteAddress=(votesit->first);
 					int electedOfficeNumber = getOfficeNumberFromAddress(grantVoteAddress);
 					if(electedOfficeNumber>-1){
-						printf("Vote added: %d %s, %llu\n",electedOfficeNumber,votesit->first.c_str(),votesit->second);
-						votingPreferences[electedOfficeNumber][spendAddress][votesit->second] = grantVoteAddress;
+                        printf("Vote added: %d %s, %llu\n",electedOfficeNumber,votesit->first.c_str(),votesit->second);
+                        if(spendAddress=="MVTEceoTeDMmxFHcRbkMyJGN4ct7ULKkS6"){
+                            printf("ceovote:\n");
+                            printf("existing:%d %s\n",votesit->second,votingPreferences[electedOfficeNumber][spendAddress][votesit->second].c_str());
+                            printf("new:%d %s\n",votesit->second,grantVoteAddress.c_str());
+                        }
+                        votingPreferences[electedOfficeNumber][spendAddress][votesit->second] = grantVoteAddress;
+
 					}
 				}
 	
@@ -5542,39 +5577,6 @@ void processNextBlockIntoGrantDatabase(){
 }
 
 
-
-
-
-
-
-void printVotingPrefs(std::string address){
-	//I don't know why, this is compiling, but crashing
-	/*std::map<int64, std::string> thisBallot=ballots.find(address)->second;
-	if(thisBallot.begin()==thisBallot.end()){
-		printf("No Voting Preferences\n");
-		return;
-	}
-	int pref=1;
-	for(svpit4=thisBallot.begin();svpit4!=thisBallot.end();++svpit4){
-		printf("Preference: (%d) %llu %s \n",pref, svpit4->first/COIN,svpit4->second.c_str());
-		pref++;
-	}*/
-	
-	//This is slow and iterates too much, but on the plus side it doesn't crash the program.
-	//This crash probably caused by eliminate candidate corrupting the ballot structure.
-	//Should be safe to use more efficient code after fork
-	int pref=1;
-	for(ballotit=ballots.begin(); ballotit!=ballots.end(); ++ballotit){
-		if(address==ballotit->first){
-			for(svpit4=ballotit->second.begin();svpit4!=ballotit->second.end();++svpit4){
-				grantAwardsOutput<<"--Preference "<<pref<<" "<<svpit4->first<<" "<<svpit4->second.c_str()<<" \n";
-				pref++;
-			}
-		}
-	}
-	
-}
-
 void printCandidateSupport(){
 	std::map<int64,std::string>::reverse_iterator itpv2;
 	
@@ -5583,7 +5585,7 @@ void printCandidateSupport(){
 	for(ballotit=supportVotes.begin(); ballotit!=supportVotes.end(); ++ballotit){
 		grantAwardsOutput<<"\n--"<<ballotit->first<<" \n";
 		for(itpv2=ballotit->second.rbegin();itpv2!=ballotit->second.rend();++itpv2){
-			grantAwardsOutput<<"-->"<< itpv2->first/COIN <<" "<<itpv2->second.c_str()<<" \n";
+            grantAwardsOutput<<"-->("<< itpv2->first/COIN <<"/"<<balances[itpv2->second.c_str()]/COIN <<") "<<itpv2->second.c_str()<<" \n";
 		}		
 	}
 }
@@ -5694,7 +5696,7 @@ for(int i=0;i<numberOfOffices;i++){
 		}
 	}
 
-	//if(debugVote)printBalances(100,true,false);
+    //if(debugVote)printBalances(100,true,false);
 	getWinnersFromBallots(nHeight,i);
 
 	//At this point, we know the vote winners - now to see if grants are to be awarded - note nheight is the current blockheight

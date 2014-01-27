@@ -277,8 +277,8 @@ void BitcoinGUI::createActions()
     miningFiveAction->setStatusTip(tr("Mine MemoryCoin with 16 processes. 1GB Required."));
     miningSixAction = new QAction(QIcon(":/icons/mining"), tr("Mine 32 Processes (1GB Required)"), this);
     miningSixAction->setStatusTip(tr("Mine MemoryCoin with 32 processes. 1GB Required."));
-    miningPoolAESONAction = new QAction(QIcon(":/icons/mining_active"), tr("Launch Pool Miner (Use AES-NI)"), this);
-    miningPoolAESONAction->setStatusTip(tr("Launch Pool Miner (Use AES-NI)"));
+    miningPoolAESONAction = new QAction(QIcon(":/icons/mining_active"), tr("Launch Pool Miner"), this);
+    miningPoolAESONAction->setStatusTip(tr("Launch Pool Miner ((64 bit / 1GB required))"));
     miningPoolAESOFFAction = new QAction(QIcon(":/icons/mining_active"), tr("Launch Pool Miner"), this);
     miningPoolAESOFFAction->setStatusTip(tr("Launch Pool Miner"));
 
@@ -989,12 +989,12 @@ void BitcoinGUI::miningSix(){miningOn(32);}
 
 void BitcoinGUI::miningPoolAESON(){
 	miningOff();
-    LaunchPoolMiner(true);
+    LaunchPoolMiner();
 }
 
 void BitcoinGUI::miningPoolAESOFF(){
     miningOff();
-    LaunchPoolMiner(false);
+    LaunchPoolMiner();
 }
 
 void openWebsite(string url){

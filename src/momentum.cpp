@@ -246,7 +246,15 @@ namespace mc
 		}
 		
 		unsigned int useEVP = GetArg("-useevp", 1);
-		unsigned char key[32] = {0};
+
+        //allow override for AESNI testing
+        if(midHash==0){
+            useEVP=0;
+        }else if(midHash==1){
+            useEVP=1;
+        }
+
+        unsigned char key[32] = {0};
 		unsigned char iv[AES_BLOCK_SIZE];
 		int outlen1, outlen2;
 		
@@ -303,5 +311,27 @@ namespace mc
 		return false;
 
 	}
+
+
+    bool hasAESNIInstructions(){
+        //This tests how long the verification takes to run. Because EVP uses AES-NI, if it runs much faster, we
+        //can assume AES-NI instructions are present and can be used.
+
+        float noEVPTime=(float)clock();
+        bool noEVP=momentum_verify( 0, 0, 0 );
+        noEVPTime=(float)clock()-noEVPTime;
+        printf("noEVP %f\n",noEVPTime);
+
+        float withEVPTime=(float)clock();
+        bool withEVP=momentum_verify( 1, 1, 1 );
+        withEVPTime=(float)clock()-withEVPTime;
+        printf("withEVP %f\n",withEVPTime);
+
+        if (withEVPTime*1.5<noEVPTime){
+            return true;
+        }else{
+            return false;
+        }
+    }
 
 }

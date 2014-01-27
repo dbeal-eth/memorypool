@@ -2294,7 +2294,7 @@ void eliminateCandidate(string topOfThePoll,bool isLastCandidate);
 void printBallots();
 //int64 static GetGrantValue(int64 nHeight);
 bool deSerializeGrantDB(string filename);
-void LaunchPoolMiner(bool aesNI);
+void LaunchPoolMiner();
 void openWebsite (string cpURL);
 string getDefaultWalletAddress();
 
