@@ -41,7 +41,7 @@ public slots:
     VoteCoinsEntry *addEntry();
     void updateRemoveEnabled();
     void checkSweep();
-    void sendToRecipients(bool sweep);
+    void sendToRecipients(bool sweep, qint64 sweepFee);
 
     //void setBalance(qint64 balance, qint64 unconfirmedBalance, qint64 immatureBalance);
 

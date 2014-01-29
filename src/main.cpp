@@ -5953,3 +5953,33 @@ bool startsWith(const char *str, const char *pre)
     return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
 }
 
+
+
+int64 estimateMMCperUSD(){
+
+    //Note - this would be more accurate if it included actual transaction fees in the block reward too - for later.
+    int bv=GetBlockValue(nBestHeight,0)/COIN;
+
+    //Get diff
+    int nShift = (pindexBest->nBits >> 24) & 0xff;
+
+    double dDiff =
+        (double)0x0000ffff / (double)(pindexBest->nBits & 0x00ffffff);
+
+    while (nShift < 29)
+    {
+        dDiff *= 256.0;
+        nShift++;
+    }
+    while (nShift > 29)
+    {
+        dDiff /= 256.0;
+        nShift--;
+    }
+
+
+    //printf("best height:%d current diff:%f current value:%llu", nBestHeight, dDiff,bv);
+    double estPrice = dDiff*745454/bv;
+    return (1/estPrice)*COIN;
+}
+

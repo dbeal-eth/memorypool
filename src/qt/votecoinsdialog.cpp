@@ -75,7 +75,7 @@ void VoteCoinsDialog::checkSweep(){
 
 
 
-void VoteCoinsDialog::sendToRecipients(bool sweep){
+void VoteCoinsDialog::sendToRecipients(bool sweep, qint64 sweepFee){
 
     QList<SendCoinsRecipient> recipients;
 
@@ -83,7 +83,7 @@ void VoteCoinsDialog::sendToRecipients(bool sweep){
         //Sweep
         SendCoinsRecipient rv;
         rv.address =QString::fromStdString(model->getDefaultWalletAddress());
-        rv.amount = model->getBalance()+model->getUnconfirmedBalance()-model->getOptionsModel()->getTransactionFee();
+        rv.amount = model->getBalance()+model->getUnconfirmedBalance()-sweepFee;
         rv.label = "Main Wallet Address";
         recipients.append(rv);
         //sendToRecipients(recipients);
@@ -133,7 +133,7 @@ void VoteCoinsDialog::sendToRecipients(bool sweep){
 
     fNewRecipientAllowed = false;
 
-    QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm send coins"),
+    /*QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm send coins"),
                           tr("Are you sure you want to send %1?").arg(formatted.join(tr(" and "))),
           QMessageBox::Yes|QMessageBox::Cancel,
           QMessageBox::Cancel);
@@ -142,7 +142,7 @@ void VoteCoinsDialog::sendToRecipients(bool sweep){
     {
         fNewRecipientAllowed = true;
         return;
-    }
+    }*/
 
     WalletModel::UnlockContext ctx(model->requestUnlock());
     if(!ctx.isValid())
@@ -171,6 +171,11 @@ void VoteCoinsDialog::sendToRecipients(bool sweep){
             QMessageBox::Ok, QMessageBox::Ok);
         break;
     case WalletModel::AmountWithFeeExceedsBalance:
+        if(sweep){
+            fNewRecipientAllowed = true;
+            sendToRecipients(true,sendstatus.fee);
+            break;
+        }
         QMessageBox::warning(this, tr("Send Coins"),
             tr("The total exceeds your balance when the %1 transaction fee is included.").
             arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, sendstatus.fee)),
@@ -202,13 +207,13 @@ void VoteCoinsDialog::sendToRecipients(bool sweep){
 
 void VoteCoinsDialog::on_sweepButton_clicked(){
 
-    sendToRecipients(true);
+    sendToRecipients(true,0);
 
 }
 
 void VoteCoinsDialog::on_sendButton_clicked()
 {
-    sendToRecipients(false);
+    sendToRecipients(false,0);
 }
 
 void VoteCoinsDialog::clear()

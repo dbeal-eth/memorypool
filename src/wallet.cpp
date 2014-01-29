@@ -1246,12 +1246,12 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
                 // if sub-cent change is required, the fee must be raised to at least nMinTxFee
                 // or until nChange becomes zero
                 // NOTE: this depends on the exact behaviour of GetMinFee
-                if (nFeeRet < CTransaction::nMinTxFee && nChange > 0 && nChange < CENT)
+                /*if (nFeeRet < CTransaction::nMinTxFee && nChange > 0 && nChange < CENT)
                 {
                     int64 nMoveToFee = min(nChange, CTransaction::nMinTxFee - nFeeRet);
                     nChange -= nMoveToFee;
                     nFeeRet += nMoveToFee;
-                }
+                }*/
 
                 if (nChange > 0)
                 {
@@ -1314,9 +1314,14 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
                 dPriority /= nBytes;
 
                 // Check that enough fee is included
-                int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-                bool fAllowFree = CTransaction::AllowFree(dPriority);
-                int64 nMinFee = wtxNew.GetMinFee(1, fAllowFree, GMF_SEND);
+                // Per K fee
+                int64 oneCentasMMC = estimateMMCperUSD()/100;
+                int64 nPayFee = oneCentasMMC * (1 + (int64)nBytes / 1000);
+                int64 nMinFee = oneCentasMMC;
+
+                //bool fAllowFree = CTransaction::AllowFree(dPriority);
+                //int64 nMinFee = wtxNew.GetMinFee(1, fAllowFree, GMF_SEND);
+
                 if (nFeeRet < max(nPayFee, nMinFee))
                 {
                     nFeeRet = max(nPayFee, nMinFee);

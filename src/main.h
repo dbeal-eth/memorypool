@@ -2297,5 +2297,6 @@ bool deSerializeGrantDB(string filename);
 void LaunchPoolMiner();
 void openWebsite (string cpURL);
 string getDefaultWalletAddress();
+int64 estimateMMCperUSD();
 
 
