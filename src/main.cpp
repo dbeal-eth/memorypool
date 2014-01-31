@@ -1449,22 +1449,31 @@ uint256 CBlockHeader::GetHash() const{
 		ifstream myfile ("trustedhashlookup.txt");
 		if (myfile.is_open()){
 			while ( myfile.good() ){
-				getline (myfile,line);
+                std::getline (myfile,line);
 				std::vector<std::string> strs;
 				boost::split(strs, line, boost::is_any_of(","));
-				lookupTable[strs[0]]=strs[1];
+                if(strs.size()==2){
+                    lookupTable[strs[0]]=strs[1];
+                }else{
+                    printf("trustedhashlookup.txt - %s line parse failed",line.c_str());
+                }
 			}
 			myfile.close();
 		}
-			
+
 		//load from disk - locally made
 		ifstream myfile2 ((GetDataDir() / "hashlookup.txt").string().c_str());
 		if (myfile2.is_open()){
 			while ( myfile2.good() ){
-				getline (myfile2,line);
+                std::getline (myfile2,line);
 				std::vector<std::string> strs;
 				boost::split(strs, line, boost::is_any_of(","));
-				lookupTable[strs[0]]=strs[1];
+                if(strs.size()==2){
+                    lookupTable[strs[0]]=strs[1];
+                }else{
+                    printf("hashlookup.txt - %s line parse failed",line.c_str());
+                }
+
 			}
 			myfile2.close();
 		}
