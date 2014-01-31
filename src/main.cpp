@@ -1201,10 +1201,10 @@ BlockCreating = BlockCreating;
     if (bnNew > bnProofOfWorkLimit) { bnNew = bnProofOfWorkLimit; }
 
     /// debug print
-    printf("Difficulty Retarget - Kimoto Gravity Well\n");
-    printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
-    printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
-    printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+    //printf("Difficulty Retarget - Kimoto Gravity Well\n");
+    //printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
+    //printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
+    //printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
 
     return bnNew.GetCompact();
@@ -5203,7 +5203,8 @@ static const int64 GRANTBLOCKINTERVAL = (2*60*60)/nTargetSpacing;
 
 static string GRANTPREFIX ="MVTE";
 static int numberOfOffices = 6;
-const char *electedOffices[6] = {"ceo","cto","cno","cmo","cso","cha"};
+string electedOffices[7];
+//= {"ceo","cto","cno","cmo","cso","cha","XFT"};
 //Chief Executive Officer
 //Chief Technology Officer
 //Chief Network Officer
@@ -5216,7 +5217,7 @@ const char *electedOffices[6] = {"ceo","cto","cno","cmo","cso","cha"};
 //These should be persisted in a database or on disk
 int64 grantDatabaseBlockHeight=-1; //How many blocks processed for grant allocation purposes
 std::map<std::string,int64> balances; //Balances as at grant allocation block point
-std::map<std::string,std::map<int64,std::string> > votingPreferences[6]; //Voting prefs as at grant allocation block point
+std::map<std::string,std::map<int64,std::string> > votingPreferences[7]; //Voting prefs as at grant allocation block point
 
 
 
@@ -5253,9 +5254,8 @@ bool isGrantAwardBlock(int64 nHeight){
 	return false;	
 }
 
-/*
+
 void serializeGrantDB(string filename){
-		//Can't work out how to link the boost serialization libs, so rolling my own serialization
 		printf("Serialize Grant Info Database %llu\n",grantDatabaseBlockHeight);
 		ofstream grantdb;
 		grantdb.open (filename.c_str(), ios::trunc);
@@ -5269,30 +5269,18 @@ void serializeGrantDB(string filename){
 			grantdb << it->first << "\n" << it->second<< "\n";
 		}
 		
-		//fixedSizeGrantsCumulation
-		grantdb << fixedSizeGrantsCumulation.size()<< "\n";		
-		for(it=fixedSizeGrantsCumulation.begin(); it!=fixedSizeGrantsCumulation.end(); ++it){
-			grantdb << it->first << "\n" << it->second<< "\n";
-		}
-		
-		//filledGrants
-		printf("serialize filled grants %d",filledGrants.size());
-		grantdb << filledGrants.size()<< "\n";		
-		for(it=filledGrants.begin(); it!=filledGrants.end(); ++it){
-			printf("Filled grant %s %llu\n",it->first.c_str(), it->second);
-			grantdb << it->first << "\n" << it->second<< "\n";
-		}
-		
 		//votingPreferences
-		grantdb << votingPreferences.size()<< "\n";
-		for(vpit=votingPreferences.begin(); vpit!=votingPreferences.end(); ++vpit){
-			grantdb << vpit->first << "\n";
-			grantdb << vpit->second.size() << "\n";			
-			for(it=vpit->second.begin();it!=vpit->second.end();++it){
-				grantdb << it->first << "\n" << it->second<< "\n";	
-			}
-		}		
-		
+        for(int i=0;i<numberOfOffices;i++){
+            grantdb << votingPreferences[i].size()<< "\n";
+            for(vpit=votingPreferences[i].begin(); vpit!=votingPreferences[i].end(); ++vpit){
+                grantdb << vpit->first << "\n";
+                grantdb << vpit->second.size() << "\n";
+                for(it2=vpit->second.begin();it2!=vpit->second.end();++it2){
+                    grantdb << it2->first << "\n" << it2->second<< "\n";
+                }
+            }
+        }
+
 		grantdb.flush();
 		grantdb.close();
 }
@@ -5322,43 +5310,25 @@ bool deSerializeGrantDB(string filename){
 			balances[line]=atoi64(line2.c_str());
 		}
 		
-		//fixedSizeGrantsCumulation
-		fixedSizeGrantsCumulation.clear();
-		getline (myfile,line);
-		int64 fixedSizeGrantsCumulationSize=atoi64(line.c_str());
-		for(int i=0;i<fixedSizeGrantsCumulationSize;i++){
-			getline (myfile,line);
-			getline (myfile,line2);
-			fixedSizeGrantsCumulation[line]=atoi64(line2.c_str());
-		}
-		
-		//filledGrants
-		filledGrants.clear();
-		getline (myfile,line);
-		int64 filledGrantsSize=atoi64(line.c_str());
-		for(int i=0;i<filledGrantsSize;i++){
-			getline (myfile,line);
-			getline (myfile,line2);
-			filledGrants[line]=atoi64(line2.c_str());
-		}
-		
 		//votingPreferences
-		votingPreferences.clear();
-		getline (myfile,line);
-		int64 votingPreferencesSize=atoi64(line.c_str());
-		for(int i=0;i<votingPreferencesSize;i++){
-			getline (myfile,line);
-			std::string vpAddress=line;
-			getline (myfile,line);
-			int64 vpAddressSize=atoi64(line.c_str());
+        for(int i=0;i<numberOfOffices;i++){
+            votingPreferences[i].clear();
+            getline (myfile,line);
+            int64 votingPreferencesSize=atoi64(line.c_str());
+            for(int k=0;k<votingPreferencesSize;k++){
+                getline (myfile,line);
+                std::string vpAddress=line;
+                getline (myfile,line);
+                int64 vpAddressSize=atoi64(line.c_str());
 			
-			for(int i=0;i<vpAddressSize;i++){
-				getline (myfile,line);
-				getline (myfile,line2);
-				votingPreferences[vpAddress][line]=atoi64(line2.c_str());
-			}	
+                for(int j=0;j<vpAddressSize;j++){
+                    getline (myfile,line);
+                    getline (myfile,line2);
+                    votingPreferences[i][vpAddress][atoi64(line.c_str())]=line2;
+                }
 		
-		}
+            }
+        }
 				
 		myfile.close();
 		
@@ -5374,7 +5344,7 @@ bool deSerializeGrantDB(string filename){
 	}
 
 }
-*/
+
 
 bool getGrantAwards(int64 nHeight){
 	//nHeight is the current block height
@@ -5386,31 +5356,49 @@ bool getGrantAwards(int64 nHeight){
 }
 
 bool ensureGrantDatabaseUptoDate(int64 nHeight){
-	
-	//nHeight is the current block height
-		
-	        {
-			//LOCK(grantdb);
-			//deSerializeGrantDB();
-			//printf("Ensure grant database up to date %d\n",nHeight);
+
+    //This should always be true on startup
+    if(getGrantDatabaseBlockHeight()==-1){
+        string newCV="xxx";
+        //Only count custom vote if re-indexing
+        if(GetBoolArg("-reindex"),false){
+            newCV=GetArg("-customvoteprefix",newCV);
+            printf("customvoteprefix:%s\n",newCV.c_str());
+        }
+        electedOffices[0]="ceo";
+        electedOffices[1]="cto";
+        electedOffices[2]="cno";
+        electedOffices[3]="cmo";
+        electedOffices[4]="cso";
+        electedOffices[5]="cha";
+        electedOffices[6]=newCV;
+    }
+
+    //Maybe we don't have to count votes from the start - let's check if there's a recent vote database stored
+    if(getGrantDatabaseBlockHeight()==-1){
+        deSerializeGrantDB((GetDataDir() / "blocks/grantdb.dat").string().c_str());
+        printf("deserialized vote database\n");
+    }
+
+    //nHeight is the current block height
+    //requiredgrantdatabaseheight is 20 less than the current block
+    int64 requiredGrantDatabaseHeight=nHeight-GRANTBLOCKINTERVAL;
+    printf("Ensure grant database up to date %llu\n",requiredGrantDatabaseHeight);
 			
-			//requiredgrantdatabaseheight is 20 less than the current block
-			int64 requiredGrantDatabaseHeight=nHeight-GRANTBLOCKINTERVAL;
-						
-            printf("Ensure grant database up to date %llu\n",requiredGrantDatabaseHeight);
-			
-			if(getGrantDatabaseBlockHeight()>requiredGrantDatabaseHeight){
-                printf("Grant database has processed too many blocks. Needs to be rebuilt. %llu",nHeight);
-				return false;
-			}
+    if(getGrantDatabaseBlockHeight()>requiredGrantDatabaseHeight){
+        printf("Grant database has processed too many blocks. Needs to be rebuilt. %llu",nHeight);
+        balances.clear();
+        for(int i=0;i<numberOfOffices+1;i++){
+            votingPreferences[i].clear();
+        }
+        gdBlockPointer=pindexGenesisBlock;
+        grantDatabaseBlockHeight=-1;
+    }
 	
-			while(getGrantDatabaseBlockHeight()<requiredGrantDatabaseHeight){
-				processNextBlockIntoGrantDatabase();
-			}
-		}
-		return true;
-		
-		
+    while(getGrantDatabaseBlockHeight()<requiredGrantDatabaseHeight){
+        processNextBlockIntoGrantDatabase();
+    }
+    return true;
 		
 }
 
@@ -5422,36 +5410,12 @@ int64 getGrantDatabaseBlockHeight(){
 	return grantDatabaseBlockHeight;
 }
 
-/*
-bool isValidGrantAddress(std::string receiveAddress){
-
-//Valid grant addresses must start with the charaters
-//MVTExEx
-//Where x can be a number or lowercase 'o' to represent zero
-
-
-if (!startsWith(receiveAddress.c_str(),GRANTPREFIX.c_str())){
-return false;
-}
-if(receiveAddress[5]!='E'){
-return false;
-}
-if((receiveAddress[4]<49 || receiveAddress[4]>57) && receiveAddress[4]!='o'){
-return false;
-}
-//Max exponent of 4 - so max fixed grant size of 90,000
-if((receiveAddress[6]<49 || receiveAddress[6]>52) && receiveAddress[6]!='o'){
-return false;
-}
-//seems legit
-return true;
-}*/
 
 int getOfficeNumberFromAddress(string grantVoteAddress){
 	if (!startsWith(grantVoteAddress.c_str(),GRANTPREFIX.c_str())){
 		return -1;
 	}
-	for(int i=0;i<numberOfOffices;i++){
+    for(int i=0;i<numberOfOffices+1;i++){
 		//printf("substring %s\n",grantVoteAddress.substr(4,3).c_str());
 		if(grantVoteAddress.substr(4,3)==electedOffices[i]){
 			return i;
@@ -5553,14 +5517,9 @@ void processNextBlockIntoGrantDatabase(){
 					int electedOfficeNumber = getOfficeNumberFromAddress(grantVoteAddress);
 					if(electedOfficeNumber>-1){
                         printf("Vote added: %d %s, %llu\n",electedOfficeNumber,votesit->first.c_str(),votesit->second);
-                        if(spendAddress=="MVTEceoTeDMmxFHcRbkMyJGN4ct7ULKkS6"){
-                            printf("ceovote:\n");
-                            printf("existing:%d %s\n",votesit->second,votingPreferences[electedOfficeNumber][spendAddress][votesit->second].c_str());
-                            printf("new:%d %s\n",votesit->second,grantVoteAddress.c_str());
-                        }
                         votingPreferences[electedOfficeNumber][spendAddress][votesit->second] = grantVoteAddress;
-
-					}
+                        printf("Size: %d \n",votingPreferences[electedOfficeNumber].size());
+                    }
 				}
 	
 			}
@@ -5572,14 +5531,10 @@ void processNextBlockIntoGrantDatabase(){
 	if(isGrantAwardBlock(grantDatabaseBlockHeight+GRANTBLOCKINTERVAL)){
 		getGrantAwardsFromDatabaseForBlock(grantDatabaseBlockHeight+GRANTBLOCKINTERVAL);
 		//Save the grant database to disk - these need to be persisted
-		
-		//printf("1 current block on:%llu\n",gdBlockPointer->GetBlockHash());
-		//serializeGrantDB((GetDataDir() / "grantdb.dat").string().c_str());
-		//if(grantDatabaseBlockHeight==1540){
-		//	serializeGrantDB((GetDataDir() / "grantdb1540.dat").string().c_str());
-		//}
-		//check deserialization is working
-		//deSerializeGrantDB((GetDataDir() / "grantdb.dat").string().c_str());
+        serializeGrantDB((GetDataDir() / "blocks/grantdb.dat").string().c_str());
+
+        //check deserialization is working
+        //deSerializeGrantDB((GetDataDir() / "blocks/grantdb.dat").string().c_str());
 		//printf("2 current block on:%llu\n",gdBlockPointer->GetBlockHash());
 		
 	}
@@ -5678,7 +5633,7 @@ bool getGrantAwardsFromDatabaseForBlock(int64 nHeight){
 	grantAwards.clear();
 
 		
-for(int i=0;i<numberOfOffices;i++){
+for(int i=0;i<numberOfOffices+1;i++){
 	ballots.clear();
 	ballotBalances.clear();
 	ballotWeights.clear();
@@ -5709,10 +5664,12 @@ for(int i=0;i<numberOfOffices;i++){
 	getWinnersFromBallots(nHeight,i);
 
 	//At this point, we know the vote winners - now to see if grants are to be awarded - note nheight is the current blockheight
-	for(int i=0;i<getNUMBEROFAWARDS(nHeight);i++){
-		grantAwards[awardWinners[i]]=grantAwards[awardWinners[i]]+GetGrantValue(nHeight);
-		if(debugVote)grantAwardsOutput << "Add grant award to Block "<<awardWinners[i].c_str()<<" ("<<GetGrantValue(nHeight)/COIN<<")\n";
-	}
+    if(i<numberOfOffices){
+        for(int i=0;i<getNUMBEROFAWARDS(nHeight);i++){
+            grantAwards[awardWinners[i]]=grantAwards[awardWinners[i]]+GetGrantValue(nHeight);
+            if(debugVote)grantAwardsOutput << "Add grant award to Block "<<awardWinners[i].c_str()<<" ("<<GetGrantValue(nHeight)/COIN<<")\n";
+        }
+    }
 	if(debugVote)printCandidateSupport();
 	
 }	

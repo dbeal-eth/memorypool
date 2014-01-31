@@ -1321,12 +1321,20 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
 
                 //bool fAllowFree = CTransaction::AllowFree(dPriority);
                 //int64 nMinFee = wtxNew.GetMinFee(1, fAllowFree, GMF_SEND);
+                int64 overridetxfee=GetArg("-overridetxfee",-1);
+                if(overridetxfee!=-1){
+                    //nFeeRet=overridetxfee;
+                    nPayFee=overridetxfee;
+                    nMinFee=overridetxfee;
+                }
 
                 if (nFeeRet < max(nPayFee, nMinFee))
                 {
                     nFeeRet = max(nPayFee, nMinFee);
                     continue;
                 }
+
+
 
                 // Fill vtxPrev by copying from previous transactions vtxPrev
                 wtxNew.AddSupportingTransactions();
