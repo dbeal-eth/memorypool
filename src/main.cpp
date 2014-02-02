@@ -48,7 +48,7 @@ unsigned int nTransactionsUpdated = 0;
 
 map<uint256, CBlockIndex*> mapBlockIndex;
 
-uint256 hashGenesisBlock("0x0167f68b07587c231403069612646700deb086acc423a7b85f3304ac372e81d9");
+uint256 hashGenesisBlock  = hashGenesisBlockOfficial;
 uint256 merkleRootGenesisBlock("0x7222184ed88a400fd62444b7894ca67bc7a8c04145e19c5adf1236ef82ae4efb");
 static CBigNum bnProofOfWorkLimit(~uint256(0) >> 4);
 CBlockIndex* pindexGenesisBlock = NULL;
@@ -1984,7 +1984,7 @@ bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsVi
     }
         
     //Check correct amount awarded in grants
-    if(pindex->nHeight==1){
+    if(pindex->nHeight==1 && !fTestNet){
 	if(vtx[0].GetValueOut()!=73366415666531){
 		return state.DoS(100, error("ConnectBlock() : Block 1 coinbase pays too much (actual=%"PRI64d" vs limit=%"PRI64d")", vtx[0].GetValueOut(), GetBlockValue(pindex->nHeight, nFees+grantAward)));
 	}
@@ -3011,11 +3011,11 @@ bool LoadBlockIndex()
 {
     if (fTestNet)
     {
-        pchMessageStart[0] = 0x0b;
-        pchMessageStart[1] = 0x11;
-        pchMessageStart[2] = 0x09;
-        pchMessageStart[3] = 0x07;
-        hashGenesisBlock = uint256("000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943");
+        pchMessageStart[0] = 0xf9;
+        pchMessageStart[1] = 0xbc;
+        pchMessageStart[2] = 0xb6;
+        pchMessageStart[3] = 0xd9;
+        hashGenesisBlock = hashGenesisBlockTestNet;
     }
 
     //
@@ -3080,8 +3080,11 @@ bool InitBlockIndex() {
 
         if (fTestNet)
         {
-            block.nTime    = 1296688602;
-            block.nNonce   = 414098458;
+            block.nTime      = 1391351968;
+            block.nBits      = 0x21000FFF;
+            block.nNonce     = 631968;
+            block.nBirthdayA = 12167;
+            block.nBirthdayB = 2298743741LL;
         }
 
         //// debug print
@@ -4479,7 +4482,7 @@ CBlockTemplate* CreateNewBlock(CReserveKey& reservekey)
     txNew.vout.resize(1);
     
     printf("Create Block, %d\n",pindexBest->nHeight+1); 
-    if(pindexBest->nHeight+1==1){
+    if(!fTestNet && pindexBest->nHeight+1==1){
 	//Block 1 - add balances for beta testers, protoshares
     	std::map<std::string,int64> genesisBalances= getGenesisBalances();
 	std::map<std::string,int64>::iterator balit;
@@ -4881,10 +4884,13 @@ void static BitcoinMiner(CWallet *pwallet, unsigned int randStartNonce)
 	char *scratchpad;
 	scratchpad=new char[(1<<30)];
 	
-    try { for(;;) {
-        while (vNodes.empty()){
-            MilliSleep(1000);
-	}
+    try {
+        for(;;) {
+            if(!fTestNet){
+                while (vNodes.empty()){
+                    MilliSleep(1000);
+                }
+            }
 
         //
         // Create new block
