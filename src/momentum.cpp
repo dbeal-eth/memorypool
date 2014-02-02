@@ -219,7 +219,7 @@ namespace mc
 		clock_t t1 = clock();
 		
 		//Basic check
-		if( a > comparisonSize ) return false;
+        if( a >= comparisonSize ) return false;
 		
 		//Allocate memory required
 		unsigned char *cacheMemoryOperatingData;

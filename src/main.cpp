@@ -1272,7 +1272,7 @@ unsigned int static OldGetNextWorkRequired(const CBlockIndex* pindexLast, const 
 
     // Limit adjustment step
     int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-    printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
+    //printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
     
     if (nActualTimespan < nTargetTimespan*0.8)
         nActualTimespan = nTargetTimespan*0.8;
@@ -1291,9 +1291,9 @@ unsigned int static OldGetNextWorkRequired(const CBlockIndex* pindexLast, const 
 
     /// debug print
     //printf("\n");
-    printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-    printf("GetNextWorkRequired RETARGET After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+    //printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
+    //printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
+    //printf("GetNextWorkRequired RETARGET After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
     return bnNew.GetCompact();
 }
@@ -2183,9 +2183,9 @@ bool SetBestChain(CValidationState &state, CBlockIndex* pindexNew)
     nBestChainWork = pindexNew->nChainWork;
     nTimeBestReceived = GetTime();
     nTransactionsUpdated++;
-    printf("SetBestChain: new best=%s  height=%d  log2_work=%.8g  tx=%lu  date=%s progress=%f\n",
+    printf("SetBestChain: new best=%s  height=%d  log2_work=%.8g  tx=%lu  date=%s unixtime=%llu progress=%f\n",
       hashBestChain.ToString().c_str(), nBestHeight, log(nBestChainWork.getdouble())/log(2.0), (unsigned long)pindexNew->nChainTx,
-      DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexBest->GetBlockTime()).c_str(),
+      DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexBest->GetBlockTime()).c_str(), pindexBest->GetBlockTime(),
       Checkpoints::GuessVerificationProgress(pindexBest));
 
     // Check the version of the last 100 blocks to see if we need to upgrade:
@@ -5285,7 +5285,7 @@ void serializeGrantDB(string filename){
 		grantdb.close();
 }
 
-bool deSerializeGrantDB(string filename){
+bool deSerializeGrantDB(string filename, int64 maxWanted){
 
 	printf("DeSerialize Grant Info Database\n");
 	
@@ -5300,6 +5300,13 @@ bool deSerializeGrantDB(string filename){
 		grantDatabaseBlockHeight=atoi64(line.c_str());
 		printf("Deserialize Grant Info Database Found Height %llu\n",grantDatabaseBlockHeight);
 		
+        if(grantDatabaseBlockHeight>maxWanted){
+            //vote database later than required - don't load
+            grantDatabaseBlockHeight=-1;
+            myfile.close();
+            return false;
+        }
+
 		//Balances
 		balances.clear();
 		getline (myfile,line);
@@ -5335,6 +5342,10 @@ bool deSerializeGrantDB(string filename){
 		//Set the pointer to next block to process
 		gdBlockPointer=pindexGenesisBlock;
 		for(int i=0;i<grantDatabaseBlockHeight;i++){
+            if(gdBlockPointer->pnext==NULL){
+                printf("Insufficent number of blocks loaded %s\n",filename.c_str());
+                return false;
+            }
 			gdBlockPointer=gdBlockPointer->pnext;
 		}
 		return true;
@@ -5374,17 +5385,18 @@ bool ensureGrantDatabaseUptoDate(int64 nHeight){
         electedOffices[6]=newCV;
     }
 
-    //Maybe we don't have to count votes from the start - let's check if there's a recent vote database stored
-    if(getGrantDatabaseBlockHeight()==-1){
-        deSerializeGrantDB((GetDataDir() / "blocks/grantdb.dat").string().c_str());
-        printf("deserialized vote database\n");
-    }
-
     //nHeight is the current block height
     //requiredgrantdatabaseheight is 20 less than the current block
     int64 requiredGrantDatabaseHeight=nHeight-GRANTBLOCKINTERVAL;
     printf("Ensure grant database up to date %llu\n",requiredGrantDatabaseHeight);
-			
+
+    //Maybe we don't have to count votes from the start - let's check if there's a recent vote database stored
+    if(getGrantDatabaseBlockHeight()==-1){
+        deSerializeGrantDB((GetDataDir() / "blocks/grantdb.dat").string().c_str(),requiredGrantDatabaseHeight);
+        //printf("deserialized vote database:\n");
+    }
+
+    /*
     if(getGrantDatabaseBlockHeight()>requiredGrantDatabaseHeight){
         printf("Grant database has processed too many blocks. Needs to be rebuilt. %llu",nHeight);
         balances.clear();
@@ -5393,7 +5405,7 @@ bool ensureGrantDatabaseUptoDate(int64 nHeight){
         }
         gdBlockPointer=pindexGenesisBlock;
         grantDatabaseBlockHeight=-1;
-    }
+    }*/
 	
     while(getGrantDatabaseBlockHeight()<requiredGrantDatabaseHeight){
         processNextBlockIntoGrantDatabase();

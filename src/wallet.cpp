@@ -1319,6 +1319,11 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
                 int64 nPayFee = oneCentasMMC * (1 + (int64)nBytes / 1000);
                 int64 nMinFee = oneCentasMMC;
 
+                //round fees up to 1,000,000 satoshis
+                nPayFee=((nPayFee/1000000)+1)*1000000;
+                nMinFee=((nMinFee/1000000)+1)*1000000;
+
+
                 //bool fAllowFree = CTransaction::AllowFree(dPriority);
                 //int64 nMinFee = wtxNew.GetMinFee(1, fAllowFree, GMF_SEND);
                 int64 overridetxfee=GetArg("-overridetxfee",-1);
