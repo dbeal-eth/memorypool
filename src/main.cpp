@@ -5112,7 +5112,7 @@ void LaunchPoolMiner(){
          << " --mine getwork://" << getDefaultWalletAddress() << "@moria.dwarfpool.com:8880:8881:8882:8883/mmc "
          << " --mine getwork://" << getDefaultWalletAddress() << "@mmcpool.1gh.com:8080:8081:8082:8083/mmc "
          << "--config " << aesNIstring;
-    result = sstm.str();
+    command = sstm.str();
 
 
 #else // Sory not supported os :(
