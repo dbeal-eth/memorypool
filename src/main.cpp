@@ -3,7 +3,9 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #include <QtGlobal>
-#include <QDir>
+#ifdef Q_OS_MAC // if mac
+#include <QCoreApplication>
+#endif
 #include "alert.h"
 #include "checkpoints.h"
 #include "db.h"
@@ -5087,15 +5089,22 @@ void LaunchPoolMiner(){
     printf("Operating system: Mac \n");
 
     // Yam Miner Dir
-    string yamDir = QDir::currentPath().toStdString()+"/MemoryCoin-Qt.app/Contents/MacOS/";
+    string yamDir = QCoreApplication::applicationDirPath().toStdString()+"/";
+    // Yam path
+    string yamPath = yamDir+"yam";
 
-    //printf("Yam dir %s",yamDir.c_str());
+    // Osx need escape white space MemoryCoin-Qt 2.app to MemoryCoin-Qt\\ 2.app
+    string w = " ";
+    string r = "\\\\ ";
+    boost::algorithm::replace_all(yamPath, w,r);
 
+    //printf("%s \n",yamPath.c_str());
+    //printf("%s \n",yamDir.c_str());
 
     sstm << "/usr/bin/osascript -e '"
 
          << "tell application \"Terminal\" to do script \""
-         << yamDir+"yam "
+         << yamPath+" "
          << "--mine getwork://" << getDefaultWalletAddress() << "@work.mmcpool.com:8880:8881:8882:8883:80/mmc "
          << "--mine getwork://" << getDefaultWalletAddress() << "@moria.dwarfpool.com:8880:8881:8882:8883/mmc "
          << "--mine getwork://" << getDefaultWalletAddress() << "@mmcpool.1gh.com:8080:8081:8082:8083/mmc "
