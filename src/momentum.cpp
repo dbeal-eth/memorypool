@@ -311,27 +311,23 @@ namespace mc
 		return false;
 
 	}
-
+    // http://blog.paphus.com/blog/2012/07/24/runtime-cpu-feature-checking/
+    void cpuid(unsigned info, unsigned *eax, unsigned *ebx, unsigned *ecx, unsigned *edx)
+      {
+        *eax = info;
+        __asm volatile
+          ("mov %%ebx, %%edi;" /* 32bit PIC: don't clobber ebx */
+           "cpuid;"
+           "mov %%ebx, %%esi;"
+           "mov %%edi, %%ebx;"
+           :"+a" (*eax), "=S" (*ebx), "=c" (*ecx), "=d" (*edx)
+           : :"edi");
+    }
 
     bool hasAESNIInstructions(){
-        //This tests how long the verification takes to run. Because EVP uses AES-NI, if it runs much faster, we
-        //can assume AES-NI instructions are present and can be used.
-
-        float noEVPTime=(float)clock();
-        bool noEVP=momentum_verify( 0, 0, 0 );
-        noEVPTime=(float)clock()-noEVPTime;
-        printf("noEVP %f\n",noEVPTime);
-
-        float withEVPTime=(float)clock();
-        bool withEVP=momentum_verify( 1, 1, 1 );
-        withEVPTime=(float)clock()-withEVPTime;
-        printf("withEVP %f\n",withEVPTime);
-
-        if (withEVPTime*1.5<noEVPTime){
-            return true;
-        }else{
-            return false;
-        }
+        unsigned int eax, ebx, ecx, edx;
+        cpuid(1, &eax, &ebx, &ecx, &edx);
+        return ((edx & 0x2000000) != 0);
     }
 
 }

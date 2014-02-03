@@ -8,6 +8,7 @@
 #include <QApplication>
 #include <QUrl>
 #include <QDesktopServices>
+#include <QtGlobal>
 
 #include "bitcoingui.h"
 
@@ -373,7 +374,7 @@ void BitcoinGUI::createMenuBar()
     //settings->addAction(miningFourAction);
     //settings->addAction(miningFiveAction);
     //settings->addAction(miningSixAction);
-
+#ifdef Q_OS_WIN64 // if windows 64 and miner is exists
     //Check pool miner exists before adding menu option
     if( access( "yam-64bit-generic.exe", F_OK ) != -1 ) {
         mining->addSeparator();
@@ -383,6 +384,17 @@ void BitcoinGUI::createMenuBar()
         mining->addAction(balanceDwarfAction);
         mining->addAction(balance1GHAction);
     }
+#endif
+
+    //Check pool miner exists before adding menu option
+#ifdef Q_OS_MAC
+    mining->addSeparator();
+    mining->addAction(miningPoolAESONAction);
+    mining->addSeparator();
+    mining->addAction(balanceMMCAction);
+    mining->addAction(balanceDwarfAction);
+    mining->addAction(balance1GHAction);
+#endif
 
     //mining->addAction(miningPoolAESOFFAction);
 
