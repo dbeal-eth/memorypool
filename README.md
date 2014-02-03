@@ -5,8 +5,8 @@ http://www.memorycoin.org
 
 Copyright (c) 2009-2013 Bitcoin Developers, Invictus, FreeTrade, MemoryCoin Developers
 
-What is Bitcoin?
-----------------
+What is MemoryCoin?
+-------------------
 
 MemoryCoin is an experimental new digital currency that builds on Bitcoin.
 
