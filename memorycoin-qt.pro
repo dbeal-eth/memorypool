@@ -413,8 +413,12 @@ macx: {
     BDB_LIB_SUFFIX = -4.8
     BDB_LIB_PATH = /usr/local/opt/berkeley-db4/lib
     BDB_INCLUDE_PATH = /usr/local/opt/berkeley-db4/include
-
-    # Libs for universal build
+    # Universal Build http://qt-project.org/doc/qt-4.8/developing-on-mac.html#universal-binaries
+    CONFIG += x86
+    CONFIG += ppc
+    CONFIG += x86_64
+    CONFIG += ppc64
+    # Libs
     LIBS += -framework Foundation -framework ApplicationServices -framework AppKit -framework CoreServices \
         $$BDB_LIB_PATH/libdb_cxx.a \
         $$BOOST_LIB_PATH/libboost_system-mt.a \
@@ -424,6 +428,10 @@ macx: {
         $$BOOST_LIB_PATH/libboost_chrono-mt.a
     # osx 10.9 has changed the stdlib default to libc++. To prevent some link error, you may need to use libstdc++
     QMAKE_CXXFLAGS += -stdlib=libstdc++
+    QMAKE_CXXFLAGS += -arch i386
+    QMAKE_CXXFLAGS += -arch x86_64
+    QMAKE_CFLAGS += -arch i386
+    QMAKE_CFLAGS += -arch x86_64
     # Header Files
     HEADERS += src/qt/macdockiconhandler.h
     # Object Sources

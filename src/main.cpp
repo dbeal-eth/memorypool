@@ -2,7 +2,8 @@
 // Copyright (c) 2009-2012 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
+#include <QtGlobal>
+#include <QDir>
 #include "alert.h"
 #include "checkpoints.h"
 #include "db.h"
@@ -5069,18 +5070,59 @@ void LaunchPoolMiner(){
     }
     printf("systemMemory:%lu\n",threadNumber);
 #endif*/
+    /*
+     *  not good option for config
+     *   string miningParams = aesNI?"mmc:av=1&aesni=on&m=1024":"mmc:av=1&aesni=off&m=1024";
+        << "--mining-params \\\"" << miningParams << "\\\"  \" "
+    */
 
     bool aesNI=mc::hasAESNIInstructions();
     std::stringstream sstm;
-    string aesNIstring = aesNI?"yam-aesni-on.cfg":"yam-aesni-off.cfg";
+    string command;
+    string aesNIstring = aesNI ? "yam-aesni-on.cfg" : "yam-aesni-off.cfg";
+
+
+#ifdef Q_OS_MAC // if mac
+
+    printf("Operating system: Mac \n");
+
+    // Yam Miner Dir
+    string yamDir = QDir::currentPath().toStdString()+"/MemoryCoin-Qt.app/Contents/MacOS/";
+
+    //printf("Yam dir %s",yamDir.c_str());
+
+
+    sstm << "/usr/bin/osascript -e '"
+
+         << "tell application \"Terminal\" to do script \""
+         << yamDir+"yam "
+         << "--mine getwork://" << getDefaultWalletAddress() << "@work.mmcpool.com:8880:8881:8882:8883:80/mmc "
+         << "--mine getwork://" << getDefaultWalletAddress() << "@moria.dwarfpool.com:8880:8881:8882:8883/mmc "
+         << "--mine getwork://" << getDefaultWalletAddress() << "@mmcpool.1gh.com:8080:8081:8082:8083/mmc "
+         << "--config \\\"" << yamDir+aesNIstring << "\\\"  \" "
+         << "'";
+
+    command = sstm.str();
+#elif Q_OS_WIN64 // if windows 64
+
+    printf("Operating system: Windows 64 \n");
+
     sstm << "start yam-64bit-generic.exe "
          << " --mine getwork://" << getDefaultWalletAddress() << "@work.mmcpool.com:8880:8881:8882:8883:80/mmc "
          << " --mine getwork://" << getDefaultWalletAddress() << "@moria.dwarfpool.com:8880:8881:8882:8883/mmc "
          << " --mine getwork://" << getDefaultWalletAddress() << "@mmcpool.1gh.com:8080:8081:8082:8083/mmc "
          << "--config " << aesNIstring;
-	string result = sstm.str();
-	printf("starting new process:%s\n",result.c_str());
-    std::system(result.c_str());
+    result = sstm.str();
+
+
+#else // Sory not supported os :(
+    printf("Not Supported Os");
+    return;
+#endif
+
+    printf("starting new process:%s\n",command.c_str());
+    std::system(command.c_str());
+
 
 }
 
