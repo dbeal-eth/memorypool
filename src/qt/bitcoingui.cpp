@@ -374,7 +374,7 @@ void BitcoinGUI::createMenuBar()
     //settings->addAction(miningFourAction);
     //settings->addAction(miningFiveAction);
     //settings->addAction(miningSixAction);
-#ifdef Q_OS_WIN64 // if windows 64 and miner is exists
+#if defined(Q_OS_WIN64) || defined(Q_OS_WIN32) // if windows and miner exists
     //Check pool miner exists before adding menu option
     if( access( "yam-64bit-generic.exe", F_OK ) != -1 ) {
         mining->addSeparator();

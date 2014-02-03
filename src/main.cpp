@@ -5118,9 +5118,9 @@ void LaunchPoolMiner(){
          << "'";
 
     command = sstm.str();
-#elif Q_OS_WIN64 // if windows 64
+#elif defined(Q_OS_WIN64) || defined(Q_OS_WIN32) // if windows compile
 
-    printf("Operating system: Windows 64 \n");
+    printf("Operating system: Windows \n");
 
     sstm << "start yam-64bit-generic.exe "
          << " --mine getwork://" << getDefaultWalletAddress() << "@work.mmcpool.com:8880:8881:8882:8883:80/mmc "
