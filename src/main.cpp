@@ -5120,8 +5120,7 @@ void LaunchPoolMiner(){
          << "'";
 
     command = sstm.str();
-#elif defined(Q_OS_WIN64) || defined(Q_OS_WIN32) // if windows compile
-
+#else
     printf("Operating system: Windows \n");
 
     sstm << "start yam-64bit-generic.exe "
@@ -5130,11 +5129,6 @@ void LaunchPoolMiner(){
          << " --mine getwork://" << getDefaultWalletAddress() << "@mmcpool.1gh.com:8080:8081:8082:8083/mmc "
          << "--config " << aesNIstring;
     command = sstm.str();
-
-
-#else // Sory not supported os :(
-    printf("Not Supported Os");
-    return;
 #endif
 
     printf("starting new process:%s\n",command.c_str());
