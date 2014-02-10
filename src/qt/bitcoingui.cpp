@@ -6,6 +6,9 @@
  */
 
 #include <QApplication>
+#include <QUrl>
+#include <QDesktopServices>
+#include <QtGlobal>
 
 #include "bitcoingui.h"
 
@@ -66,6 +69,17 @@ BitcoinGUI::BitcoinGUI(QWidget *parent) :
     miningTwoAction(0),
     miningThreeAction(0),
     miningFourAction(0),
+    miningFiveAction(0),
+    miningSixAction(0),
+    miningPoolAESONAction(0),
+    miningPoolAESOFFAction(0),
+    balanceMMCAction(0),
+    balanceDwarfAction(0),
+    balance1GHAction(0),
+    currentVotesAction(0),
+    currentCandidatesAction(0),
+    howToVoteAction(0),
+    currentResultsAction(0),
     aboutQtAction(0),
     trayIcon(0),
     notificator(0),
@@ -205,6 +219,14 @@ void BitcoinGUI::createActions()
     addressBookAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
     tabGroup->addAction(addressBookAction);
 
+    voteCoinsAction = new QAction(QIcon(":/icons/voting_prefs"), tr("&Vote"), this);
+    voteCoinsAction->setStatusTip(tr("Vote in MemoryCoin elections"));
+    voteCoinsAction->setToolTip(voteCoinsAction->statusTip());
+    voteCoinsAction->setCheckable(true);
+    voteCoinsAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
+    tabGroup->addAction(voteCoinsAction);
+
+
     connect(overviewAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(overviewAction, SIGNAL(triggered()), this, SLOT(gotoOverviewPage()));
     connect(sendCoinsAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
@@ -215,6 +237,8 @@ void BitcoinGUI::createActions()
     connect(historyAction, SIGNAL(triggered()), this, SLOT(gotoHistoryPage()));
     connect(addressBookAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(addressBookAction, SIGNAL(triggered()), this, SLOT(gotoAddressBookPage()));
+    connect(voteCoinsAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(voteCoinsAction, SIGNAL(triggered()), this, SLOT(gotoVoteCoinsPage()));
 
     quitAction = new QAction(QIcon(":/icons/quit"), tr("E&xit"), this);
     quitAction->setStatusTip(tr("Quit application"));
@@ -240,21 +264,41 @@ void BitcoinGUI::createActions()
     changePassphraseAction = new QAction(QIcon(":/icons/key"), tr("&Change Passphrase..."), this);
     changePassphraseAction->setStatusTip(tr("Change the passphrase used for wallet encryption"));
     
-    miningOffAction = new QAction(QIcon(":/icons/mining"), tr("Switch Mining Off"), this);
+    miningOffAction = new QAction(QIcon(":/icons/mining_inactive"), tr("Solo Mining Off"), this);
     miningOffAction->setStatusTip(tr("Stop Mining. May take some time to wind down."));
-   // miningOffAction->setMenuRole(QAction::PreferencesRole);
-    miningOneAction = new QAction(QIcon(":/icons/mining"), tr("Mine 1 Process (1GB Required)"), this);
-    miningOneAction->setStatusTip(tr("Mine MemoryCoin with 1 process. 1GB Required."));
-   // miningOneAction->setMenuRole(QAction::PreferencesRole);
+    miningOneAction = new QAction(QIcon(":/icons/mining_active"), tr("Solo Mining On (1GB Required)"), this);
+    miningOneAction->setStatusTip(tr("Mine MemoryCoin solo - not recommended!"));
     miningTwoAction = new QAction(QIcon(":/icons/mining"), tr("Mine 2 Processes (1GB Required)"), this);
     miningTwoAction->setStatusTip(tr("Mine MemoryCoin with 2 processes. 1GB Required."));
-   // miningTwoAction->setMenuRole(QAction::PreferencesRole);
     miningThreeAction = new QAction(QIcon(":/icons/mining"), tr("Mine 4 Processes (1GB Required)"), this);
     miningThreeAction->setStatusTip(tr("Mine MemoryCoin with 4 processes. 1GB Required."));
-   // miningThreeAction->setMenuRole(QAction::PreferencesRole);
     miningFourAction = new QAction(QIcon(":/icons/mining"), tr("Mine 8 Processes (1GB Required)"), this);
     miningFourAction->setStatusTip(tr("Mine MemoryCoin with 8 processes. 1GB Required."));
-   // miningFourAction->setMenuRole(QAction::PreferencesRole);
+    miningFiveAction = new QAction(QIcon(":/icons/mining"), tr("Mine 16 Processes (1GB Required)"), this);
+    miningFiveAction->setStatusTip(tr("Mine MemoryCoin with 16 processes. 1GB Required."));
+    miningSixAction = new QAction(QIcon(":/icons/mining"), tr("Mine 32 Processes (1GB Required)"), this);
+    miningSixAction->setStatusTip(tr("Mine MemoryCoin with 32 processes. 1GB Required."));
+    miningPoolAESONAction = new QAction(QIcon(":/icons/mining_active"), tr("Launch Pool Miner"), this);
+    miningPoolAESONAction->setStatusTip(tr("Launch Pool Miner ((64 bit / 1GB required))"));
+    miningPoolAESOFFAction = new QAction(QIcon(":/icons/mining_active"), tr("Launch Pool Miner"), this);
+    miningPoolAESOFFAction->setStatusTip(tr("Launch Pool Miner"));
+
+    balanceMMCAction = new QAction(QIcon(":/icons/coin"), tr("Pool Balance (MMCPool)"), this);
+    balanceMMCAction->setStatusTip(tr("Pool Balance (MMCPool))"));
+    balanceDwarfAction = new QAction(QIcon(":/icons/coin"), tr("Pool Balance (Dwarf Pool)"), this);
+    balanceDwarfAction->setStatusTip(tr("Pool Balance (Dwarf Pool))"));
+    balance1GHAction = new QAction(QIcon(":/icons/coin"), tr("Pool Balance (1GH Pool)"), this);
+    balance1GHAction->setStatusTip(tr("Pool Balance (1GH Pool))"));
+
+    currentVotesAction = new QAction(QIcon(":/icons/voting_prefs"), tr("Current Voting Preferences"), this);
+    currentVotesAction->setStatusTip(tr("Show who or what you are currently voting for. (Web)"));
+    currentCandidatesAction = new QAction(QIcon(":/icons/voting_candidates"), tr("Current Candidates"), this);
+    currentCandidatesAction->setStatusTip(tr("Display a list of current candidates. (Web)"));
+    howToVoteAction = new QAction(QIcon(":/icons/voting_how"), tr("How To Vote"), this);
+    howToVoteAction->setStatusTip(tr("Information about how to cast your vote. (Web)"));
+    currentResultsAction = new QAction(QIcon(":/icons/voting_results"), tr("Latest Election Results"), this);
+    currentResultsAction->setStatusTip(tr("Current board and past results. (Web)"));    
+   
     
     signMessageAction = new QAction(QIcon(":/icons/edit"), tr("Sign &message..."), this);
     signMessageAction->setStatusTip(tr("Sign messages with your MemoryCoin addresses to prove you own them"));
@@ -279,6 +323,19 @@ void BitcoinGUI::createActions()
     connect(miningTwoAction, SIGNAL(triggered()), this, SLOT(miningTwo()));
     connect(miningThreeAction, SIGNAL(triggered()), this, SLOT(miningThree()));
     connect(miningFourAction, SIGNAL(triggered()), this, SLOT(miningFour()));
+    connect(miningFiveAction, SIGNAL(triggered()), this, SLOT(miningFive()));
+    connect(miningSixAction, SIGNAL(triggered()), this, SLOT(miningSix()));
+    connect(miningPoolAESONAction, SIGNAL(triggered()), this, SLOT(miningPoolAESON()));
+    connect(miningPoolAESOFFAction, SIGNAL(triggered()), this, SLOT(miningPoolAESOFF()));
+    
+    connect(balanceMMCAction, SIGNAL(triggered()), this, SLOT(balanceMMC()));
+    connect(balanceDwarfAction, SIGNAL(triggered()), this, SLOT(balanceDwarf()));
+    connect(balance1GHAction, SIGNAL(triggered()), this, SLOT(balance1GH()));
+
+    connect(currentVotesAction, SIGNAL(triggered()), this, SLOT(currentVotes()));    
+    connect(currentCandidatesAction, SIGNAL(triggered()), this, SLOT(currentCandidates()));    
+    connect(howToVoteAction, SIGNAL(triggered()), this, SLOT(howToVote()));    
+    connect(currentResultsAction, SIGNAL(triggered()), this, SLOT(currentResults()));    
     
     connect(signMessageAction, SIGNAL(triggered()), this, SLOT(gotoSignMessageTab()));
     connect(verifyMessageAction, SIGNAL(triggered()), this, SLOT(gotoVerifyMessageTab()));
@@ -305,15 +362,48 @@ void BitcoinGUI::createMenuBar()
     QMenu *settings = appMenuBar->addMenu(tr("&Settings"));
     settings->addAction(encryptWalletAction);
     settings->addAction(changePassphraseAction);
-
-    settings->addSeparator();
-    settings->addAction(miningOffAction);
-    settings->addAction(miningOneAction);
-    settings->addAction(miningTwoAction);
-    settings->addAction(miningThreeAction);
-    settings->addAction(miningFourAction);
     settings->addSeparator();
     settings->addAction(optionsAction);
+
+    QMenu *mining = appMenuBar->addMenu(tr("&Mining"));
+    mining->addSeparator();
+    mining->addAction(miningOneAction);
+    mining->addAction(miningOffAction);
+    //settings->addAction(miningTwoAction);
+    //settings->addAction(miningThreeAction);
+    //settings->addAction(miningFourAction);
+    //settings->addAction(miningFiveAction);
+    //settings->addAction(miningSixAction);
+#if defined(Q_OS_WIN64) || defined(Q_OS_WIN32) // if windows and miner exists
+    //Check pool miner exists before adding menu option
+    if( access( "yam-64bit-generic.exe", F_OK ) != -1 ) {
+        mining->addSeparator();
+        mining->addAction(miningPoolAESONAction);
+        mining->addSeparator();
+        mining->addAction(balanceMMCAction);
+        mining->addAction(balanceDwarfAction);
+        mining->addAction(balance1GHAction);
+    }
+#endif
+
+    //Check pool miner exists before adding menu option
+#ifdef Q_OS_MAC
+    mining->addSeparator();
+    mining->addAction(miningPoolAESONAction);
+    mining->addSeparator();
+    mining->addAction(balanceMMCAction);
+    mining->addAction(balanceDwarfAction);
+    mining->addAction(balance1GHAction);
+#endif
+
+    //mining->addAction(miningPoolAESOFFAction);
+
+    QMenu *voting = appMenuBar->addMenu(tr("&Voting"));
+    voting->addAction(currentVotesAction);
+    voting->addAction(currentCandidatesAction);
+    voting->addAction(howToVoteAction);
+    voting->addAction(currentResultsAction);
+
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
     help->addAction(openRPCConsoleAction);
@@ -331,6 +421,7 @@ void BitcoinGUI::createToolBars()
     toolbar->addAction(receiveCoinsAction);
     toolbar->addAction(historyAction);
     toolbar->addAction(addressBookAction);
+    toolbar->addAction(voteCoinsAction);
 }
 
 void BitcoinGUI::setClientModel(ClientModel *clientModel)
@@ -433,6 +524,7 @@ void BitcoinGUI::createTrayIconMenu()
     trayIconMenu->addAction(toggleHideAction);
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(sendCoinsAction);
+    trayIconMenu->addAction(voteCoinsAction);
     trayIconMenu->addAction(receiveCoinsAction);
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(signMessageAction);
@@ -520,6 +612,11 @@ void BitcoinGUI::gotoSendCoinsPage(QString addr)
     if (walletFrame) walletFrame->gotoSendCoinsPage(addr);
 }
 
+void BitcoinGUI::gotoVoteCoinsPage(QString addr)
+{
+    if (walletFrame) walletFrame->gotoVoteCoinsPage(addr);
+}
+
 void BitcoinGUI::gotoSignMessageTab(QString addr)
 {
     if (walletFrame) walletFrame->gotoSignMessageTab(addr);
@@ -544,6 +641,8 @@ void BitcoinGUI::setNumConnections(int count)
     labelConnectionsIcon->setPixmap(QIcon(icon).pixmap(STATUSBAR_ICONSIZE,STATUSBAR_ICONSIZE));
     if(count<5){
 	labelConnectionsIcon->setToolTip(tr("%n active connection(s) to MemoryCoin network. Open port 1968 for more connections.", "", count));
+    }else{
+	labelConnectionsIcon->setToolTip(tr("%n active connection(s) to MemoryCoin network.", "", count));
     }
 }
 
@@ -746,9 +845,9 @@ void BitcoinGUI::closeEvent(QCloseEvent *event)
 
 void BitcoinGUI::askFee(qint64 nFeeRequired, bool *payFee)
 {
-    QString strMessage = tr("This transaction is over the size limit. You can still send it for a fee of %1, "
+    QString strMessage = tr("The transaction fee will be %1, "
         "which goes to the nodes that process your transaction and helps to support the network. "
-        "Do you want to pay the fee?").arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, nFeeRequired));
+        "Do you still want to process the transaction?").arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, nFeeRequired));
     QMessageBox::StandardButton retval = QMessageBox::question(
           this, tr("Confirm transaction fee"), strMessage,
           QMessageBox::Yes|QMessageBox::Cancel, QMessageBox::Yes);
@@ -884,19 +983,60 @@ void BitcoinGUI::detectShutdown()
 void BitcoinGUI::miningOff()
 {
 mapArgs["-genproclimit"] = "0";
-GenerateBitcoins(true, pwalletMain);
+GenerateBitcoins(false, pwalletMain);
 }
 
 void BitcoinGUI::miningOn(int processes)
 {
 mapArgs["-genproclimit"] = itostr(processes);
-GenerateBitcoins(true, pwalletMain);
+GenerateBitcoins(processes!=0?true:false, pwalletMain);
 }
 
-void BitcoinGUI::miningOne(){miningOn(1);}
+void BitcoinGUI::miningOne(){miningOn(-1);}
 void BitcoinGUI::miningTwo(){miningOn(2);}
 void BitcoinGUI::miningThree(){miningOn(4);}
 void BitcoinGUI::miningFour(){miningOn(8);}
+void BitcoinGUI::miningFive(){miningOn(16);}
+void BitcoinGUI::miningSix(){miningOn(32);}
 
+void BitcoinGUI::miningPoolAESON(){
+	miningOff();
+    LaunchPoolMiner();
+}
 
+void BitcoinGUI::miningPoolAESOFF(){
+    miningOff();
+    LaunchPoolMiner();
+}
 
+void openWebsite(string url){
+    QDesktopServices::openUrl(QUrl(QString::fromStdString(url), QUrl::TolerantMode));
+}
+
+void BitcoinGUI::currentVotes(){
+	openWebsite("http://mmcvotes.com/address/"+getDefaultWalletAddress());
+}
+
+void BitcoinGUI::howToVote(){
+	openWebsite("http://memorycoin.org/how-to-vote/");
+}
+
+void BitcoinGUI::currentCandidates(){
+	openWebsite("http://memorycoin.org/candidates/");
+}
+
+void BitcoinGUI::currentResults(){
+	openWebsite("http://mmcvotes.com/");
+}
+
+void BitcoinGUI::balanceMMC(){
+    openWebsite("http://mmcpool.com/en/user?wallet="+getDefaultWalletAddress());
+}
+
+void BitcoinGUI::balanceDwarf(){
+    openWebsite("http://dwarfpool.com/mmc/address?wallet="+getDefaultWalletAddress());
+}
+
+void BitcoinGUI::balance1GH(){
+    openWebsite("http://mmc.1gh.com/user?wallet="+getDefaultWalletAddress());
+}

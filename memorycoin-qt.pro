@@ -1,7 +1,7 @@
 TEMPLATE = app
 TARGET = memorycoin-qt
 macx:TARGET = "MemoryCoin-Qt"
-VERSION = 0.8.5
+VERSION = 0.8.582
 INCLUDEPATH += src src/json src/qt
 QT += network widgets 
 DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE SCRYPT_CHACHA SCRYPT_KECCAK512
@@ -211,7 +211,9 @@ HEADERS += src/qt/bitcoingui.h \
     src/leveldb.h \
     src/threadsafety.h \
     src/limitedmap.h \
-    src/qt/splashscreen.h
+    src/qt/splashscreen.h \
+    src/qt/votecoinsdialog.h \
+    src/qt/votecoinsentry.h
 
 SOURCES += src/qt/bitcoin.cpp \
     src/qt/bitcoingui.cpp \
@@ -280,8 +282,10 @@ SOURCES += src/qt/bitcoin.cpp \
     src/leveldb.cpp \
     src/txdb.cpp \
     src/momentum.cpp \
-    src/qt/splashscreen.cpp
-
+    src/qt/splashscreen.cpp \
+    src/qt/votecoinsdialog.cpp \
+    src/qt/votecoinsentry.cpp
+    
 RESOURCES += src/qt/bitcoin.qrc
 
 FORMS += src/qt/forms/sendcoinsdialog.ui \
@@ -294,7 +298,9 @@ FORMS += src/qt/forms/sendcoinsdialog.ui \
     src/qt/forms/sendcoinsentry.ui \
     src/qt/forms/askpassphrasedialog.ui \
     src/qt/forms/rpcconsole.ui \
-    src/qt/forms/optionsdialog.ui
+    src/qt/forms/optionsdialog.ui \
+    src/qt/forms/votecoinsdialog.ui \
+    src/qt/forms/votecoinsentry.ui
 
 contains(USE_QRCODE, 1) {
 HEADERS += src/qt/qrcodedialog.h
@@ -340,36 +346,38 @@ OTHER_FILES += README.md \
     src/test/*.cpp \
     src/test/*.h \
     src/qt/test/*.cpp \
-    src/qt/test/*.h
+    src/qt/test/*.h \
+    src/mac/* \
+    src/mac/macbuilder.py
 
 # platform specific defaults, if not overridden on command line
 isEmpty(BOOST_LIB_SUFFIX) {
-    macx:BOOST_LIB_SUFFIX = -mt
+    #macx:BOOST_LIB_SUFFIX = -mt
     win32:BOOST_LIB_SUFFIX = -mgw44-mt-s-1_50
 }
 
 isEmpty(BOOST_THREAD_LIB_SUFFIX) {
     BOOST_THREAD_LIB_SUFFIX = $$BOOST_LIB_SUFFIX
 }
-
+# macx: debrecen qt 5
 isEmpty(BDB_LIB_PATH) {
-    macx:BDB_LIB_PATH = /opt/local/lib/db48
+    #macx:BDB_LIB_PATH = /usr/local/opt/berkeley-db4/lib
 }
 
 isEmpty(BDB_LIB_SUFFIX) {
-    macx:BDB_LIB_SUFFIX = -4.8
+    #macx:BDB_LIB_SUFFIX = -4.8
 }
 
 isEmpty(BDB_INCLUDE_PATH) {
-    macx:BDB_INCLUDE_PATH = /opt/local/include/db48
+   # macx:BDB_INCLUDE_PATH = /usr/local/opt/berkeley-db4/include
 }
 
 isEmpty(BOOST_LIB_PATH) {
-    macx:BOOST_LIB_PATH = /opt/local/lib
+    #macx:BOOST_LIB_PATH = /usr/local/Cellar/boost/1.55.0/lib
 }
 
 isEmpty(BOOST_INCLUDE_PATH) {
-    macx:BOOST_INCLUDE_PATH = /opt/local/include
+    #macx:BOOST_INCLUDE_PATH = /usr/local/Cellar/boost/1.55.0/include
 }
 
 win32:DEFINES += WIN32
@@ -393,15 +401,52 @@ win32:!contains(MINGW_THREAD_BUGFIX, 0) {
     DEFINES += _FILE_OFFSET_BITS=64
 }
 
-macx:HEADERS += src/qt/macdockiconhandler.h
-macx:OBJECTIVE_SOURCES += src/qt/macdockiconhandler.mm
-macx:LIBS += -framework Foundation -framework ApplicationServices -framework AppKit
-macx:DEFINES += MAC_OSX MSG_NOSIGNAL=0
-macx:ICON = src/qt/res/icons/bitcoin.icns
-macx:QMAKE_CFLAGS_THREAD += -pthread
-macx:QMAKE_LFLAGS_THREAD += -pthread
-macx:QMAKE_CXXFLAGS_THREAD += -pthread
-macx:QMAKE_INFO_PLIST = share/qt/Info.plist
+
+# For Mac Config
+macx: {
+    # Boost LIB "brew install boost"
+    BOOST_LIB_SUFFIX = -mt
+    BOOST_THREAD_LIB_SUFFIX = $$BOOST_LIB_SUFFIX
+    BOOST_LIB_PATH = /usr/local/Cellar/boost/1.55.0/lib
+    BOOST_INCLUDE_PATH = /usr/local/Cellar/boost/1.55.0/include
+    # Berkeley DB
+    BDB_LIB_SUFFIX = -4.8
+    BDB_LIB_PATH = /usr/local/opt/berkeley-db4/lib
+    BDB_INCLUDE_PATH = /usr/local/opt/berkeley-db4/include
+    # Universal Build http://qt-project.org/doc/qt-4.8/developing-on-mac.html#universal-binaries
+    CONFIG += x86
+    CONFIG += ppc
+    CONFIG += x86_64
+    CONFIG += ppc64
+    # Libs
+    LIBS += -framework Foundation -framework ApplicationServices -framework AppKit -framework CoreServices \
+        $$BDB_LIB_PATH/libdb_cxx.a \
+        $$BOOST_LIB_PATH/libboost_system-mt.a \
+        $$BOOST_LIB_PATH/libboost_filesystem-mt.a \
+        $$BOOST_LIB_PATH/libboost_program_options-mt.a \
+        $$BOOST_LIB_PATH/libboost_thread-mt.a \
+        $$BOOST_LIB_PATH/libboost_chrono-mt.a
+    # osx 10.9 has changed the stdlib default to libc++. To prevent some link error, you may need to use libstdc++
+    QMAKE_CXXFLAGS += -stdlib=libstdc++
+    QMAKE_CXXFLAGS += -arch i386
+    QMAKE_CXXFLAGS += -arch x86_64
+    QMAKE_CFLAGS += -arch i386
+    QMAKE_CFLAGS += -arch x86_64
+    # Header Files
+    HEADERS += src/qt/macdockiconhandler.h
+    # Object Sources
+    OBJECTIVE_SOURCES += src/qt/macdockiconhandler.mm
+    # Defines
+    DEFINES += MAC_OSX MSG_NOSIGNAL=0
+    # Mac Wallet Plist File
+    QMAKE_INFO_PLIST = src/mac/Info.plist
+    # Wallet ICON
+    ICON = src/qt/res/icons/memorycoin.icns
+    # Build Flags
+    QMAKE_CFLAGS_THREAD += -pthread
+    QMAKE_LFLAGS_THREAD += -pthread
+    QMAKE_CXXFLAGS_THREAD += -pthread
+}
 
 # Set libraries and includes at end, to use platform-defined defaults if not overridden
 INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH $$QRENCODE_INCLUDE_PATH

@@ -908,6 +908,45 @@ void CWallet::ResendWalletTransactions()
 // Actions
 //
 
+string CWallet::getDefaultWalletAddress(){
+    //This rigmarole to get the default wallet address
+    CReserveKey reservekey(this);
+    CTransaction txNew;
+    txNew.vout.resize(1);
+    CPubKey pubkey;
+    reservekey.GetReservedKey(pubkey);
+    txNew.vout[0].scriptPubKey << pubkey << OP_CHECKSIG;
+    CTxDestination address;
+    ExtractDestination(txNew.vout[0].scriptPubKey,address);
+    string receiveAddress=CBitcoinAddress(address).ToString();
+    //printf("pubkey:%s\n",receiveAddress.c_str());
+    return receiveAddress.erase(0,0);
+}
+
+int64 CWallet::GetBalanceInDefaultAddress(){
+    string mainWalletAddress=getDefaultWalletAddress();
+    map<CTxDestination, int64> balances = this->GetAddressBalances();
+    BOOST_FOREACH(set<CTxDestination> grouping, this->GetAddressGroupings())
+        {
+        BOOST_FOREACH(CTxDestination address, grouping)
+            {
+            if(mainWalletAddress==CBitcoinAddress(address).ToString()){
+                return balances[address];
+            }
+        }
+    }
+    return 0;
+}
+
+bool CWallet::NeedsSweep()
+{
+    int64 totalAmountInAllAddresses = GetBalance();
+    //printf("total amt:%lu",totalAmountInAllAddresses);
+    int64 mainAddress = this->GetBalanceInDefaultAddress();
+    //printf("main amt:%lu",mainAddress);
+    return totalAmountInAllAddresses>mainAddress;
+}
+
 
 int64 CWallet::GetBalance() const
 {
@@ -1207,12 +1246,12 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
                 // if sub-cent change is required, the fee must be raised to at least nMinTxFee
                 // or until nChange becomes zero
                 // NOTE: this depends on the exact behaviour of GetMinFee
-                if (nFeeRet < CTransaction::nMinTxFee && nChange > 0 && nChange < CENT)
+                /*if (nFeeRet < CTransaction::nMinTxFee && nChange > 0 && nChange < CENT)
                 {
                     int64 nMoveToFee = min(nChange, CTransaction::nMinTxFee - nFeeRet);
                     nChange -= nMoveToFee;
                     nFeeRet += nMoveToFee;
-                }
+                }*/
 
                 if (nChange > 0)
                 {
@@ -1275,14 +1314,32 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend,
                 dPriority /= nBytes;
 
                 // Check that enough fee is included
-                int64 nPayFee = nTransactionFee * (1 + (int64)nBytes / 1000);
-                bool fAllowFree = false;//CTransaction::AllowFree(dPriority);
-                int64 nMinFee = wtxNew.GetMinFee(1, fAllowFree, GMF_SEND);
+                // Per K fee
+                int64 oneCentasMMC = estimateMMCperUSD()/100;
+                int64 nPayFee = oneCentasMMC * (1 + (int64)nBytes / 1000);
+                int64 nMinFee = oneCentasMMC;
+
+                //round fees up to 1,000,000 satoshis
+                nPayFee=((nPayFee/1000000)+1)*1000000;
+                nMinFee=((nMinFee/1000000)+1)*1000000;
+
+
+                //bool fAllowFree = CTransaction::AllowFree(dPriority);
+                //int64 nMinFee = wtxNew.GetMinFee(1, fAllowFree, GMF_SEND);
+                int64 overridetxfee=GetArg("-overridetxfee",-1);
+                if(overridetxfee!=-1){
+                    //nFeeRet=overridetxfee;
+                    nPayFee=overridetxfee;
+                    nMinFee=overridetxfee;
+                }
+
                 if (nFeeRet < max(nPayFee, nMinFee))
                 {
                     nFeeRet = max(nPayFee, nMinFee);
                     continue;
                 }
+
+
 
                 // Fill vtxPrev by copying from previous transactions vtxPrev
                 wtxNew.AddSupportingTransactions();
@@ -1472,6 +1529,21 @@ bool CWallet::GetTransaction(const uint256 &hashTx, CWalletTx& wtx)
             wtx = (*mi).second;
             return true;
         }
+    }
+    return false;
+}
+
+bool CWallet::switchDefaultKey(const string newAddress){
+    CBitcoinAddress address(newAddress);
+    if (address.IsValid()){
+        CKeyID keyID;
+        if (!address.GetKeyID(keyID))
+            throw runtime_error(strprintf("%s does not refer to a key",newAddress.c_str()));
+        CPubKey vchPubKey;
+        if (!GetPubKey(keyID, vchPubKey))
+            throw runtime_error(strprintf("no full public key for address %s",newAddress.c_str()));
+        SetDefaultKey(vchPubKey);
+        return true;
     }
     return false;
 }
@@ -1781,19 +1853,26 @@ set< set<CTxDestination> > CWallet::GetAddressGroupings()
 
 bool CReserveKey::GetReservedKey(CPubKey& pubkey)
 {
-    if (nIndex == -1)
-    {
-        CKeyPool keypool;
-        pwallet->ReserveKeyFromKeyPool(nIndex, keypool);
-        /*if (nIndex != -1)
-            vchPubKey = keypool.vchPubKey;
-        else {
-            if (pwallet->vchDefaultKey.IsValid()) {
-                printf("CReserveKey::GetReservedKey(): Warning: Using default key instead of a new key, top up your keypool!");*/
-                vchPubKey = pwallet->vchDefaultKey;
-            /*} else
-                return false;
-        }*/
+    if(fMultiAddress){
+        if (nIndex == -1)
+        {
+            CKeyPool keypool;
+            pwallet->ReserveKeyFromKeyPool(nIndex, keypool);
+            if (nIndex != -1)
+                vchPubKey = keypool.vchPubKey;
+            else {
+                if (pwallet->vchDefaultKey.IsValid()) {
+                    printf("CReserveKey::GetReservedKey(): Warning: Using default key instead of a new key, top up your keypool!");
+                    vchPubKey = pwallet->vchDefaultKey;
+                } else
+                    return false;
+            }
+        }
+    }else{
+        if (pwallet->vchDefaultKey.IsValid()) {
+            vchPubKey = pwallet->vchDefaultKey;
+        } else
+            return false;
     }
     assert(vchPubKey.IsValid());
     pubkey = vchPubKey;

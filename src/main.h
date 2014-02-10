@@ -60,6 +60,9 @@ static const int fHaveUPnP = true;
 static const int fHaveUPnP = false;
 #endif
 
+static const uint256 hashGenesisBlockOfficial("0x0167f68b07587c231403069612646700deb086acc423a7b85f3304ac372e81d9");
+static const uint256 hashGenesisBlockTestNet("0x012c479ee7ab1359a632690a32041a9980a66adcd8a9fc0d9bb1f5f0414edc71");
+
 
 extern CScript COINBASE_FLAGS;
 
@@ -95,6 +98,7 @@ extern bool fBenchmark;
 extern int nScriptCheckThreads;
 extern bool fTxIndex;
 extern unsigned int nCoinCacheSize;
+extern bool fMultiAddress;
 
 // Settings
 extern int64 nTransactionFee;
@@ -2286,10 +2290,16 @@ void processNextBlockIntoGrantDatabase();
 bool getGrantAwardsFromDatabaseForBlock(int64 nHeight);
 bool ensureGrantDatabaseUptoDate(int64 nHeight);
 bool startsWith(const char *str, const char *pre);
-void getWinnersFromBallots(int64 nHeight);
-string electOrEliminate(int64 droopQuota,  int requiredCandidates);
+void getWinnersFromBallots(int64 nHeight,int officeNumber);
+string electOrEliminate(int64 droopQuota,  unsigned int requiredCandidates);
 void electCandidate(string topOfThePoll, double gregorySurplusTransferValue,bool isLastCandidate);
 void eliminateCandidate(string topOfThePoll,bool isLastCandidate);
 void printBallots();
-int64 static GetGrantValue(int64 nHeight);
+//int64 static GetGrantValue(int64 nHeight);
 bool deSerializeGrantDB(string filename);
+void LaunchPoolMiner();
+void openWebsite (string cpURL);
+string getDefaultWalletAddress();
+int64 estimateMMCperUSD();
+
+

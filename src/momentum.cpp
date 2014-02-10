@@ -20,7 +20,7 @@ namespace mc
 	uint32_t chunkSize=(1<<(PSUEDORANDOM_DATA_CHUNK_SIZE));
 	uint32_t comparisonSize=(1<<(PSUEDORANDOM_DATA_SIZE-L2CACHE_TARGET));
 	
-	void static SHA512Filler(char *mainMemoryPsuedoRandomData, int threadNumber, int totalThreads,uint256 midHash, char* isComplete){
+	void static SHA512Filler(char *mainMemoryPsuedoRandomData, int threadNumber, int totalThreads,uint256 midHash){
 		
 		
 		//Generate psuedo random data to store in main memory
@@ -44,10 +44,10 @@ namespace mc
 				}
 			}*/
 		}
-		isComplete[threadNumber]=1;
+		//isComplete[threadNumber]=1;
 	}
 	
-	void static aesSearch(char *mainMemoryPsuedoRandomData, int threadNumber, int totalThreads, char* isComplete, std::vector< std::pair<uint32_t,uint32_t> > *results){
+	void static aesSearch(char *mainMemoryPsuedoRandomData, int threadNumber, int totalThreads, std::vector< std::pair<uint32_t,uint32_t> > *results, boost::mutex *mtx){
 		//Allocate temporary memory
 		unsigned char *cacheMemoryOperatingData;
 		unsigned char *cacheMemoryOperatingData2;	
@@ -91,7 +91,7 @@ namespace mc
 			
 			for(int j=0;j<AES_ITERATIONS;j++){
 
-				//use last 4 bits of first cache as next location
+                //use last 4 bytes of first cache as next location
 				uint32_t nextLocation = cacheMemoryOperatingData32[(cacheMemorySize/4)-1]%comparisonSize;
 
 				//Copy data from indicated location to second l2 cache -
@@ -133,6 +133,7 @@ namespace mc
 			if(solution==1968){
 				uint32_t proofOfCalculation=cacheMemoryOperatingData32[(cacheMemorySize/4)-2];
 				printf("found solution - %d / %u / %u\n",k,solution,proofOfCalculation);
+				boost::mutex::scoped_lock lck(*mtx);
 				(*results).push_back( std::make_pair( k, proofOfCalculation ) );
 			}
 		}
@@ -142,9 +143,10 @@ namespace mc
 		delete [] cacheMemoryOperatingData2;
 		//CRYPTO_cleanup_all_ex_data();
 		//EVP_cleanup();
-		isComplete[threadNumber]=1;
+		//isComplete[threadNumber]=1;
 	}
 	
+	/*
 	void waitForAllThreadsToComplete(char* threadsComplete,int totalThreads){
 		int complete=0;
 		float firstThreadFinishedTime=0;
@@ -165,7 +167,7 @@ namespace mc
 				watchDogTimerFinish=true;
 			}
 		}while(complete!=totalThreads && !watchDogTimerFinish);
-	}
+	}*/
 	
  	std::vector< std::pair<uint32_t,uint32_t> > momentum_search( uint256 midHash, char *mainMemoryPsuedoRandomData, int totalThreads){
 		
@@ -183,22 +185,24 @@ namespace mc
 		char *threadsComplete;
 		threadsComplete=new char[totalThreads];
 		for (int i = 0; i < totalThreads; i++){
-			sha512Threads->create_thread(boost::bind(&SHA512Filler, mainMemoryPsuedoRandomData, i,totalThreads,midHash,threadsComplete));
+			sha512Threads->create_thread(boost::bind(&SHA512Filler, mainMemoryPsuedoRandomData, i,totalThreads,midHash));
 		}
 		//Wait for all threads to complete
-		waitForAllThreadsToComplete(threadsComplete, totalThreads);
+		//waitForAllThreadsToComplete(threadsComplete, totalThreads);
+		sha512Threads->join_all();
 		
 		//clock_t t2 = clock();
 		//printf("create psuedorandom data %f\n",(float)t2-(float)t1);
-
+		
+		boost::mutex mtx;
 		boost::thread_group* aesThreads = new boost::thread_group();
 		threadsComplete=new char[totalThreads];
 		for (int i = 0; i < totalThreads; i++){
-			aesThreads->create_thread(boost::bind(&aesSearch, mainMemoryPsuedoRandomData, i,totalThreads,threadsComplete,&results));
+			aesThreads->create_thread(boost::bind(&aesSearch, mainMemoryPsuedoRandomData, i,totalThreads,&results, &mtx));
 		}
 		//Wait for all threads to complete
-		waitForAllThreadsToComplete(threadsComplete, totalThreads);
-		
+		//waitForAllThreadsToComplete(threadsComplete, totalThreads);
+		aesThreads->join_all();
 		
 		//clock_t t3 = clock();
 		//printf("comparisons %f\n",(float)t3-(float)t2);
@@ -215,7 +219,7 @@ namespace mc
 		clock_t t1 = clock();
 		
 		//Basic check
-		if( a > comparisonSize ) return false;
+        if( a >= comparisonSize ) return false;
 		
 		//Allocate memory required
 		unsigned char *cacheMemoryOperatingData;
@@ -242,7 +246,15 @@ namespace mc
 		}
 		
 		unsigned int useEVP = GetArg("-useevp", 1);
-		unsigned char key[32] = {0};
+
+        //allow override for AESNI testing
+        if(midHash==0){
+            useEVP=0;
+        }else if(midHash==1){
+            useEVP=1;
+        }
+
+        unsigned char key[32] = {0};
 		unsigned char iv[AES_BLOCK_SIZE];
 		int outlen1, outlen2;
 		
@@ -299,5 +311,47 @@ namespace mc
 		return false;
 
 	}
+
+#ifdef Q_OS_MAC // if mac
+    // http://blog.paphus.com/blog/2012/07/24/runtime-cpu-feature-checking/
+    void cpuid(unsigned info, unsigned *eax, unsigned *ebx, unsigned *ecx, unsigned *edx)
+      {
+        *eax = info;
+        __asm volatile
+          ("mov %%ebx, %%edi;" /* 32bit PIC: don't clobber ebx */
+           "cpuid;"
+           "mov %%ebx, %%esi;"
+           "mov %%edi, %%ebx;"
+           :"+a" (*eax), "=S" (*ebx), "=c" (*ecx), "=d" (*edx)
+           : :"edi");
+    }
+
+    bool hasAESNIInstructions(){
+        unsigned int eax, ebx, ecx, edx;
+        cpuid(1, &eax, &ebx, &ecx, &edx);
+        return ((edx & 0x2000000) != 0);
+    }
+#else
+    bool hasAESNIInstructions(){
+        //This tests how long the verification takes to run. Because EVP uses AES-NI, if it runs much faster, we
+        //can assume AES-NI instructions are present and can be used.
+
+        float noEVPTime=(float)clock();
+        bool noEVP=momentum_verify( 0, 0, 0 );
+        noEVPTime=(float)clock()-noEVPTime;
+        printf("noEVP %f\n",noEVPTime);
+
+        float withEVPTime=(float)clock();
+        bool withEVP=momentum_verify( 1, 1, 1 );
+        withEVPTime=(float)clock()-withEVPTime;
+        printf("withEVP %f\n",withEVPTime);
+
+        if (withEVPTime*1.5<noEVPTime){
+            return true;
+        }else{
+            return false;
+        }
+    }
+#endif
 
 }

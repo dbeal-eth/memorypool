@@ -15,6 +15,8 @@ class TransactionView;
 class OverviewPage;
 class AddressBookPage;
 class SendCoinsDialog;
+class VoteCoinsDialog;
+
 class SignVerifyMessageDialog;
 class Notificator;
 class RPCConsole;
@@ -67,6 +69,7 @@ public:
     QAction * getAddressBookAction() { return addressBookAction; }
     QAction * getReceiveCoinsAction() { return receiveCoinsAction; }
     QAction * getSendCoinsAction() { return sendCoinsAction; }
+    QAction * getVoteCoinsAction() { return voteCoinsAction; }
 
 protected:
     void changeEvent(QEvent *e);
@@ -91,6 +94,7 @@ private:
     QAction *historyAction;
     QAction *quitAction;
     QAction *sendCoinsAction;
+    QAction *voteCoinsAction;
     QAction *addressBookAction;
     QAction *signMessageAction;
     QAction *verifyMessageAction;
@@ -106,6 +110,18 @@ private:
     QAction *miningTwoAction;
     QAction *miningThreeAction;
     QAction *miningFourAction;
+    QAction *miningFiveAction;
+    QAction *miningSixAction;
+    QAction *miningPoolAESONAction;
+    QAction *miningPoolAESOFFAction;
+    QAction *balanceMMCAction;
+    QAction *balanceDwarfAction;
+    QAction *balance1GHAction;
+
+    QAction *currentVotesAction;
+    QAction *currentCandidatesAction;
+    QAction *howToVoteAction;
+    QAction *currentResultsAction;
     
     QAction *aboutQtAction;
     QAction *openRPCConsoleAction;
@@ -181,6 +197,8 @@ private slots:
     void gotoReceiveCoinsPage();
     /** Switch to send coins page */
     void gotoSendCoinsPage(QString addr = "");
+    /** Switch to vote coins page */
+    void gotoVoteCoinsPage(QString addr = "");
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");
@@ -210,7 +228,19 @@ private slots:
     void miningTwo();
     void miningThree();
     void miningFour();
+    void miningFive();
+    void miningSix();
+    void miningPoolAESON();
+    void miningPoolAESOFF();
+    void balanceMMC();
+    void balanceDwarf();
+    void balance1GH();
 
+
+    void currentVotes();
+    void currentCandidates();
+    void howToVote();
+    void currentResults();
 };
 
 #endif // BITCOINGUI_H

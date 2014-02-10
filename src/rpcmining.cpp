@@ -173,6 +173,9 @@ Value getwork(const Array& params, bool fHelp)
       //  fprintf( stderr, "init hash %s\n", initHash.ToString().c_str() );
         memcpy( pdata, (char*)pblock, 88 );
 
+        //Security fix from re-order
+        memset(pdata + 88, 0, 128 - 88);
+
         Object result;
         result.push_back(Pair("data",     HexStr(BEGIN(pdata), END(pdata))));
         result.push_back(Pair("target",   HexStr(BEGIN(hashTarget), END(hashTarget))));

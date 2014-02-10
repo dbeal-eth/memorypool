@@ -33,7 +33,7 @@
        <item>
         <widget class="QLabel" name="transactionFeeInfoLabel">
          <property name="text">
-          <string>Optional transaction fee per kB that helps make sure your transactions are processed quickly. Most transactions are 1 kB.</string>
+          <string>Transactions incur a 1 cent (USD, approximate) fee per kB that helps make sure your transactions are processed quickly. Most transactions are 1 kB.</string>
          </property>
          <property name="textFormat">
           <enum>Qt::PlainText</enum>
@@ -47,6 +47,9 @@
         <layout class="QHBoxLayout" name="horizontalLayout_1_Main">
          <item>
           <widget class="QLabel" name="transactionFeeLabel">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Pay transaction &amp;fee</string>
            </property>
@@ -59,7 +62,11 @@
           </widget>
          </item>
          <item>
-          <widget class="BitcoinAmountField" name="transactionFee"/>
+          <widget class="BitcoinAmountField" name="transactionFee">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+          </widget>
          </item>
          <item>
           <spacer name="horizontalSpacer_1_Main">

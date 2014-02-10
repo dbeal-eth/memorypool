@@ -148,7 +148,6 @@ OBJS= \
     obj/json_spirit_reader.o \
     obj/json_spirit_value.o \
 
-
 all: memorypool
 
 test check: test_bitcoin FORCE
@@ -180,7 +179,7 @@ obj/%.o: %.cpp
 	      -e '/^$$/ d' -e 's/$$/ :/' < $(@:%.o=%.d) >> $(@:%.o=%.P); \
 	  rm -f $(@:%.o=%.d)
 
-bitcoind: $(OBJS:obj/%=obj/%)
+memorycoind: $(OBJS:obj/%=obj/%)
 	$(LINK) $(xCXXFLAGS) -o $@ $^ $(xLDFLAGS) $(LIBS)
 	
 memorypool: $(OBJS:obj/%=obj/%) obj/pool.o obj/rpcpool.o obj/queue.o obj/block.o
@@ -199,7 +198,7 @@ test_bitcoin: $(TESTOBJS) $(filter-out obj/init.o,$(OBJS:obj/%=obj/%))
 	$(LINK) $(xCXXFLAGS) -o $@ $(LIBPATHS) $^ $(TESTLIBS) $(xLDFLAGS) $(LIBS)
 
 clean:
-	-rm -f bitcoind test_bitcoin
+	-rm -f memorycoind test_bitcoin
 	-rm -f obj/*.o
 	-rm -f obj-test/*.o
 	-rm -f obj/*.P

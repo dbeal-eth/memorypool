@@ -27,6 +27,7 @@ class CBlockIndex;
 extern int nBestHeight;
 
 
+void setChurnMode();
 
 inline unsigned int ReceiveFloodSize() { return 1000*GetArg("-maxreceivebuffer", 5*1000); }
 inline unsigned int SendBufferSize() { return 1000*GetArg("-maxsendbuffer", 1*1000); }

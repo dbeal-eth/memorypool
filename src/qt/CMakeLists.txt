@@ -1,4 +1,3 @@
-
 file(GLOB GUI_FORMS forms/*.ui)
 
 set(GUI_SOURCES
@@ -39,6 +38,8 @@ set(GUI_SOURCES
 	paymentserver.cpp
 	rpcconsole.cpp
 	splashscreen.cpp
+	votecoinsdialog.cpp
+	votecoinsentry.cpp
 	)
 
 include_directories(.)

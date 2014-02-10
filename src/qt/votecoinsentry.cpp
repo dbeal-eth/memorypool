@@ -1,5 +1,5 @@
-#include "sendcoinsentry.h"
-#include "ui_sendcoinsentry.h"
+#include "votecoinsentry.h"
+#include "ui_votecoinsentry.h"
 
 #include "guiutil.h"
 #include "bitcoinunits.h"
@@ -8,12 +8,13 @@
 #include "optionsmodel.h"
 #include "addresstablemodel.h"
 
+
 #include <QApplication>
 #include <QClipboard>
 
-SendCoinsEntry::SendCoinsEntry(QWidget *parent) :
+VoteCoinsEntry::VoteCoinsEntry(QWidget *parent) :
     QFrame(parent),
-    ui(new Ui::SendCoinsEntry),
+    ui(new Ui::VoteCoinsEntry),
     model(0)
 {
     ui->setupUi(this);
@@ -23,8 +24,8 @@ SendCoinsEntry::SendCoinsEntry(QWidget *parent) :
 #endif
 #if QT_VERSION >= 0x040700
     /* Do not move this to the XML file, Qt before 4.7 will choke on it */
-    ui->addAsLabel->setPlaceholderText(tr("Enter a label for this address to add it to your address book"));
-    ui->payTo->setPlaceholderText(tr("Enter a MemoryCoin address (e.g. MVTEchao4RjkTTyjMcYf8dnpQ7BqJdNVhr)"));
+    //ui->addAsLabel->setPlaceholderText(tr("Enter a label for this address to add it to your address book"));
+    ui->payTo->setPlaceholderText(tr("Enter a MemoryCoin voting address (starts with MVTE)"));
 #endif
     setFocusPolicy(Qt::TabFocus);
     setFocusProxy(ui->payTo);
@@ -32,18 +33,18 @@ SendCoinsEntry::SendCoinsEntry(QWidget *parent) :
     GUIUtil::setupAddressWidget(ui->payTo, this);
 }
 
-SendCoinsEntry::~SendCoinsEntry()
+VoteCoinsEntry::~VoteCoinsEntry()
 {
     delete ui;
 }
 
-void SendCoinsEntry::on_pasteButton_clicked()
+void VoteCoinsEntry::on_pasteButton_clicked()
 {
     // Paste text from clipboard into recipient field
     ui->payTo->setText(QApplication::clipboard()->text());
 }
 
-void SendCoinsEntry::on_addressBookButton_clicked()
+void VoteCoinsEntry::on_addressBookButton_clicked()
 {
     if(!model)
         return;
@@ -52,21 +53,21 @@ void SendCoinsEntry::on_addressBookButton_clicked()
     if(dlg.exec())
     {
         ui->payTo->setText(dlg.getReturnValue());
-        ui->payAmount->setFocus();
+        //ui->payAmount->setFocus();
     }
 }
 
-void SendCoinsEntry::on_payTo_textChanged(const QString &address)
+void VoteCoinsEntry::on_payTo_textChanged(const QString &address)
 {
     if(!model)
         return;
     // Fill in label from address book, if address has an associated label
     QString associatedLabel = model->getAddressTableModel()->labelForAddress(address);
-    if(!associatedLabel.isEmpty())
-        ui->addAsLabel->setText(associatedLabel);
+    //if(!associatedLabel.isEmpty())
+    //    ui->addAsLabel->setText(associatedLabel);
 }
 
-void SendCoinsEntry::setModel(WalletModel *model)
+void VoteCoinsEntry::setModel(WalletModel *model)
 {
     this->model = model;
 
@@ -76,32 +77,32 @@ void SendCoinsEntry::setModel(WalletModel *model)
     clear();
 }
 
-void SendCoinsEntry::setRemoveEnabled(bool enabled)
+void VoteCoinsEntry::setRemoveEnabled(bool enabled)
 {
     ui->deleteButton->setEnabled(enabled);
 }
 
-void SendCoinsEntry::clear()
+void VoteCoinsEntry::clear()
 {
     ui->payTo->clear();
-    ui->addAsLabel->clear();
-    ui->payAmount->clear();
+    //ui->addAsLabel->clear();
+    //ui->payAmount->clear();
     ui->payTo->setFocus();
     // update the display unit, to not use the default ("BTC")
     updateDisplayUnit();
 }
 
-void SendCoinsEntry::on_deleteButton_clicked()
+void VoteCoinsEntry::on_deleteButton_clicked()
 {
     emit removeEntry(this);
 }
 
-bool SendCoinsEntry::validate()
+bool VoteCoinsEntry::validate()
 {
     // Check input validity
     bool retval = true;
 
-    if(!ui->payAmount->validate())
+    /*if(!ui->payAmount->validate())
     {
         retval = false;
     }
@@ -113,7 +114,7 @@ bool SendCoinsEntry::validate()
             ui->payAmount->setValid(false);
             retval = false;
         }
-    }
+    }*/
 
     if(!ui->payTo->hasAcceptableInput() ||
        (model && !model->validateAddress(ui->payTo->text())))
@@ -122,58 +123,67 @@ bool SendCoinsEntry::validate()
         retval = false;
     }
 
+    if(!ui->payTo->text().startsWith("MVTE")){
+        ui->payTo->setValid(false);
+        retval = false;
+    }
+
     return retval;
 }
 
-SendCoinsRecipient SendCoinsEntry::getValue()
+SendCoinsRecipient VoteCoinsEntry::getValue()
 {
     SendCoinsRecipient rv;
 
     rv.address = ui->payTo->text();
-    rv.label = ui->addAsLabel->text();
-    rv.amount = ui->payAmount->value();
+    //rv.label = ui->addAsLabel->text();
+    rv.amount =  ui->payAmount->currentIndex()+1;
+            //itemData();
+            //value();
 
     return rv;
 }
 
-QWidget *SendCoinsEntry::setupTabChain(QWidget *prev)
+/*QWidget *VoteCoinsEntry::setupTabChain(QWidget *prev)
 {
     QWidget::setTabOrder(prev, ui->payTo);
     QWidget::setTabOrder(ui->payTo, ui->addressBookButton);
     QWidget::setTabOrder(ui->addressBookButton, ui->pasteButton);
     QWidget::setTabOrder(ui->pasteButton, ui->deleteButton);
-    QWidget::setTabOrder(ui->deleteButton, ui->addAsLabel);
-    return ui->payAmount->setupTabChain(ui->addAsLabel);
-}
+    //QWidget::setTabOrder(ui->deleteButton, ui->addAsLabel);
+    //return ui->payAmount->setupTabChain(ui->addAsLabel);
+    //return ui->deleteButton->setupTabChain(ui->deleteButton);
+    return NULL;
+}*/
 
-void SendCoinsEntry::setValue(const SendCoinsRecipient &value)
+void VoteCoinsEntry::setValue(const SendCoinsRecipient &value)
 {
     ui->payTo->setText(value.address);
-    ui->addAsLabel->setText(value.label);
-    ui->payAmount->setValue(value.amount);
+    //ui->addAsLabel->setText(value.label);
+    //ui->payAmount->setValue(value.amount);
 }
 
-void SendCoinsEntry::setAddress(const QString &address)
+void VoteCoinsEntry::setAddress(const QString &address)
 {
     ui->payTo->setText(address);
-    ui->payAmount->setFocus();
+    //ui->payAmount->setFocus();
 }
 
-bool SendCoinsEntry::isClear()
+bool VoteCoinsEntry::isClear()
 {
     return ui->payTo->text().isEmpty();
 }
 
-void SendCoinsEntry::setFocus()
+void VoteCoinsEntry::setFocus()
 {
     ui->payTo->setFocus();
 }
 
-void SendCoinsEntry::updateDisplayUnit()
+void VoteCoinsEntry::updateDisplayUnit()
 {
     if(model && model->getOptionsModel())
     {
         // Update payAmount with the current unit
-        ui->payAmount->setDisplayUnit(model->getOptionsModel()->getDisplayUnit());
+        //ui->payAmount->setDisplayUnit(model->getOptionsModel()->getDisplayUnit());
     }
 }

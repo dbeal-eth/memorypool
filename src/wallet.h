@@ -175,6 +175,10 @@ public:
     int ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate = false);
     void ReacceptWalletTransactions();
     void ResendWalletTransactions();
+
+    int64 GetBalanceInDefaultAddress();
+    string getDefaultWalletAddress();
+    bool NeedsSweep();
     int64 GetBalance() const;
     int64 GetUnconfirmedBalance() const;
     int64 GetImmatureBalance() const;
@@ -292,6 +296,9 @@ public:
     bool GetTransaction(const uint256 &hashTx, CWalletTx& wtx);
 
     bool SetDefaultKey(const CPubKey &vchPubKey);
+    bool switchDefaultKey(const string newAddress);
+    bool containsAddress(const string newAddress);
+
 
     // signify that a particular wallet feature is now used. this may change nWalletVersion and nWalletMaxVersion if those are lower
     bool SetMinVersion(enum WalletFeature, CWalletDB* pwalletdbIn = NULL, bool fExplicit = false);

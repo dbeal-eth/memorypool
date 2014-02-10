@@ -103,7 +103,7 @@ OBJS= \
     obj/txdb.o
 
 
-all: bitcoind.exe
+all: memorycoind.exe
 
 test check: test_bitcoin.exe FORCE
 	test_bitcoin.exe
@@ -120,7 +120,7 @@ leveldb/libleveldb.a:
 obj/%.o: %.cpp $(HEADERS)
 	$(CXX) -c $(CFLAGS) -o $@ $<
 
-bitcoind.exe: $(OBJS:obj/%=obj/%)
+memorycoind.exe: $(OBJS:obj/%=obj/%)
 	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS)
 
 TESTOBJS := $(patsubst test/%.cpp,obj-test/%.o,$(wildcard test/*.cpp))
@@ -132,7 +132,7 @@ test_bitcoin.exe: $(TESTOBJS) $(filter-out obj/init.o,$(OBJS:obj/%=obj/%))
 	$(CXX) $(CFLAGS) $(LDFLAGS) -o $@ $(LIBPATHS) $^ -lboost_unit_test_framework$(BOOST_SUFFIX) $(LIBS)
 
 clean:
-	rm -f bitcoind.exe test_bitcoin.exe
+	rm -f memorycoind.exe test_bitcoin.exe
 	rm -f obj/*
 	rm -f obj-test/*
 	cd leveldb && $(MAKE) TARGET_OS=NATIVE_WINDOWS clean && cd ..

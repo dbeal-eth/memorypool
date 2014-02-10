@@ -2,7 +2,12 @@
 // Copyright (c) 2009-2012 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
+#if QT_VERSION
+#include <QtGlobal>
+#ifdef Q_OS_MAC // if mac
+#include <QCoreApplication>
+#endif
+#endif
 #include "alert.h"
 #include "checkpoints.h"
 #include "db.h"
@@ -21,7 +26,13 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <sys/stat.h>
+#include <stdio.h>
 
+/*
+#ifdef WIN32
+    #include <windows.h>
+#endif
+*/
 
 using namespace std;
 using namespace boost;
@@ -42,7 +53,7 @@ unsigned int nTransactionsUpdated = 0;
 
 map<uint256, CBlockIndex*> mapBlockIndex;
 
-uint256 hashGenesisBlock("0x0167f68b07587c231403069612646700deb086acc423a7b85f3304ac372e81d9");
+uint256 hashGenesisBlock  = hashGenesisBlockOfficial;
 uint256 merkleRootGenesisBlock("0x7222184ed88a400fd62444b7894ca67bc7a8c04145e19c5adf1236ef82ae4efb");
 static CBigNum bnProofOfWorkLimit(~uint256(0) >> 4);
 CBlockIndex* pindexGenesisBlock = NULL;
@@ -58,12 +69,15 @@ bool fImporting = false;
 bool fReindex = false;
 bool fBenchmark = false;
 bool fTxIndex = true;
+bool fMultiAddress = false;
 unsigned int nCoinCacheSize = 5000;
 
 /** Fees smaller than this (in satoshi) are considered zero fee (for transaction creation) */
-int64 CTransaction::nMinTxFee = 10000;  // Override with -mintxfee
+//int64 CTransaction::nMinTxFee = 10000;  // Override with -mintxfee
+int64 CTransaction::nMinTxFee = 0;
 /** Fees smaller than this (in satoshi) are considered zero fee (for relaying) */
-int64 CTransaction::nMinRelayTxFee = 10000;
+//int64 CTransaction::nMinRelayTxFee = 10000;
+int64 CTransaction::nMinRelayTxFee = 0;
 
 CMedianFilter<int> cPeerBlockCounts(8, 0); // Amount of blocks that other nodes claim to have
 
@@ -630,12 +644,12 @@ int64 CTransaction::GetMinFee(unsigned int nBlockSize, bool fAllowFree,
     }
 
     // To limit dust spam, require base fee if any output is less than 0.01
-    if (nMinFee < nBaseFee)
+    /*if (nMinFee < nBaseFee)
     {
         BOOST_FOREACH(const CTxOut& txout, vout)
             if (txout.nValue < CENT)
                 nMinFee = nBaseFee;
-    }
+    }*/
 
     // Raise the price as the block approaches full
     if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2)
@@ -1192,10 +1206,10 @@ BlockCreating = BlockCreating;
     if (bnNew > bnProofOfWorkLimit) { bnNew = bnProofOfWorkLimit; }
 
     /// debug print
-    printf("Difficulty Retarget - Kimoto Gravity Well\n");
-    printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
-    printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
-    printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+    //printf("Difficulty Retarget - Kimoto Gravity Well\n");
+    //printf("PastRateAdjustmentRatio = %g\n", PastRateAdjustmentRatio);
+    //printf("Before: %08x %s\n", BlockLastSolved->nBits, CBigNum().SetCompact(BlockLastSolved->nBits).getuint256().ToString().c_str());
+    //printf("After: %08x %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
 
     return bnNew.GetCompact();
@@ -1263,7 +1277,7 @@ unsigned int static OldGetNextWorkRequired(const CBlockIndex* pindexLast, const 
 
     // Limit adjustment step
     int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
-    printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
+    //printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
     
     if (nActualTimespan < nTargetTimespan*0.8)
         nActualTimespan = nTargetTimespan*0.8;
@@ -1282,9 +1296,9 @@ unsigned int static OldGetNextWorkRequired(const CBlockIndex* pindexLast, const 
 
     /// debug print
     //printf("\n");
-    printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
-    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
-    printf("GetNextWorkRequired RETARGET After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+    //printf("nTargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", nTargetTimespan, nActualTimespan);
+    //printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
+    //printf("GetNextWorkRequired RETARGET After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
     return bnNew.GetCompact();
 }
@@ -1440,22 +1454,31 @@ uint256 CBlockHeader::GetHash() const{
 		ifstream myfile ("trustedhashlookup.txt");
 		if (myfile.is_open()){
 			while ( myfile.good() ){
-				getline (myfile,line);
+                std::getline (myfile,line);
 				std::vector<std::string> strs;
 				boost::split(strs, line, boost::is_any_of(","));
-				lookupTable[strs[0]]=strs[1];
+                if(strs.size()==2){
+                    lookupTable[strs[0]]=strs[1];
+                }else{
+                    printf("trustedhashlookup.txt - %s line parse failed",line.c_str());
+                }
 			}
 			myfile.close();
 		}
-			
+
 		//load from disk - locally made
 		ifstream myfile2 ((GetDataDir() / "hashlookup.txt").string().c_str());
 		if (myfile2.is_open()){
 			while ( myfile2.good() ){
-				getline (myfile2,line);
+                std::getline (myfile2,line);
 				std::vector<std::string> strs;
 				boost::split(strs, line, boost::is_any_of(","));
-				lookupTable[strs[0]]=strs[1];
+                if(strs.size()==2){
+                    lookupTable[strs[0]]=strs[1];
+                }else{
+                    printf("hashlookup.txt - %s line parse failed",line.c_str());
+                }
+
 			}
 			myfile2.close();
 		}
@@ -1936,12 +1959,12 @@ bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsVi
 			
 	//Ensure fees are going to award winners
 	printf("Check Grant Awards Are Being Added for block %d\n",pindex->nHeight);
-	int awardFound=0;
+	unsigned int awardFound=0;
 	for(gait=grantAwards.begin(); gait!=grantAwards.end(); ++gait){
 		grantAward=grantAward+gait->second;
 	}
 	for(gait=grantAwards.begin(); gait!=grantAwards.end(); ++gait){
-		for (int j = 0; j <vtx[0].vout.size(); j++){
+		for (unsigned int j = 0; j <vtx[0].vout.size(); j++){
 			CTxDestination address;
 			ExtractDestination(vtx[0].vout[j].scriptPubKey,address);
 			string receiveAddress=CBitcoinAddress(address).ToString().c_str();
@@ -1966,7 +1989,7 @@ bool CBlock::ConnectBlock(CValidationState &state, CBlockIndex* pindex, CCoinsVi
     }
         
     //Check correct amount awarded in grants
-    if(pindex->nHeight==1){
+    if(pindex->nHeight==1 && !fTestNet){
 	if(vtx[0].GetValueOut()!=73366415666531){
 		return state.DoS(100, error("ConnectBlock() : Block 1 coinbase pays too much (actual=%"PRI64d" vs limit=%"PRI64d")", vtx[0].GetValueOut(), GetBlockValue(pindex->nHeight, nFees+grantAward)));
 	}
@@ -2165,9 +2188,9 @@ bool SetBestChain(CValidationState &state, CBlockIndex* pindexNew)
     nBestChainWork = pindexNew->nChainWork;
     nTimeBestReceived = GetTime();
     nTransactionsUpdated++;
-    printf("SetBestChain: new best=%s  height=%d  log2_work=%.8g  tx=%lu  date=%s progress=%f\n",
+    printf("SetBestChain: new best=%s  height=%d  log2_work=%.8g  tx=%lu  date=%s unixtime=%llu progress=%f\n",
       hashBestChain.ToString().c_str(), nBestHeight, log(nBestChainWork.getdouble())/log(2.0), (unsigned long)pindexNew->nChainTx,
-      DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexBest->GetBlockTime()).c_str(),
+      DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexBest->GetBlockTime()).c_str(), pindexBest->GetBlockTime(),
       Checkpoints::GuessVerificationProgress(pindexBest));
 
     // Check the version of the last 100 blocks to see if we need to upgrade:
@@ -2993,11 +3016,11 @@ bool LoadBlockIndex()
 {
     if (fTestNet)
     {
-        pchMessageStart[0] = 0x0b;
-        pchMessageStart[1] = 0x11;
-        pchMessageStart[2] = 0x09;
-        pchMessageStart[3] = 0x07;
-        hashGenesisBlock = uint256("000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943");
+        pchMessageStart[0] = 0xf9;
+        pchMessageStart[1] = 0xbc;
+        pchMessageStart[2] = 0xb6;
+        pchMessageStart[3] = 0xd9;
+        hashGenesisBlock = hashGenesisBlockTestNet;
     }
 
     //
@@ -3012,6 +3035,9 @@ bool LoadBlockIndex()
 
 
 bool InitBlockIndex() {
+
+    fMultiAddress = GetBoolArg("-multiaddress", false);
+
     // Check whether we're already initialized
     if (pindexGenesisBlock != NULL)
         return true;
@@ -3053,14 +3079,17 @@ bool InitBlockIndex() {
         block.nBits      = 0x21000FFF;
         block.nNonce     = 111968;
         block.nBirthdayA = 6468;
-        block.nBirthdayB = 4147875085;
+        block.nBirthdayB = 4147875085LL;
 
 	
 
         if (fTestNet)
         {
-            block.nTime    = 1296688602;
-            block.nNonce   = 414098458;
+            block.nTime      = 1391351968;
+            block.nBits      = 0x21000FFF;
+            block.nNonce     = 631968;
+            block.nBirthdayA = 12167;
+            block.nBirthdayB = 2298743741LL;
         }
 
         //// debug print
@@ -4458,7 +4487,7 @@ CBlockTemplate* CreateNewBlock(CReserveKey& reservekey)
     txNew.vout.resize(1);
     
     printf("Create Block, %d\n",pindexBest->nHeight+1); 
-    if(pindexBest->nHeight+1==1){
+    if(!fTestNet && pindexBest->nHeight+1==1){
 	//Block 1 - add balances for beta testers, protoshares
     	std::map<std::string,int64> genesisBalances= getGenesisBalances();
 	std::map<std::string,int64>::iterator balit;
@@ -4846,6 +4875,8 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     return true;
 }
 
+
+
 void static BitcoinMiner(CWallet *pwallet, unsigned int randStartNonce)
 {
     printf("MemoryCoinMiner started\n");
@@ -4858,10 +4889,13 @@ void static BitcoinMiner(CWallet *pwallet, unsigned int randStartNonce)
 	char *scratchpad;
 	scratchpad=new char[(1<<30)];
 	
-    try { for(;;) {
-        while (vNodes.empty()){
-            MilliSleep(1000);
-	}
+    try {
+        for(;;) {
+            if(!fTestNet){
+                while (vNodes.empty()){
+                    MilliSleep(1000);
+                }
+            }
 
         //
         // Create new block
@@ -5021,6 +5055,88 @@ void static BitcoinMiner(CWallet *pwallet, unsigned int randStartNonce)
     }
 }
 
+/*void openWebsite (string cpURL)
+{
+	std::system(("start "+cpURL).c_str());
+}*/
+
+string getDefaultWalletAddress(){
+    return pwalletMain->getDefaultWalletAddress();
+}
+
+
+
+void LaunchPoolMiner(){
+
+    //Decide how much memory to use
+/*    int threadNumber=1;
+#ifdef WIN32
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof(status);
+    GlobalMemoryStatusEx(&status);
+    threadNumber=status.ullAvailPhys/(1024*1024*1024);
+    if(threadNumber<1){
+        threadNumber=1;
+    }
+    printf("systemMemory:%lu\n",threadNumber);
+#endif*/
+    /*
+     *  not good option for config
+     *   string miningParams = aesNI?"mmc:av=1&aesni=on&m=1024":"mmc:av=1&aesni=off&m=1024";
+        << "--mining-params \\\"" << miningParams << "\\\"  \" "
+    */
+
+    bool aesNI=mc::hasAESNIInstructions();
+    std::stringstream sstm;
+    string command;
+    string aesNIstring = aesNI ? "yam-aesni-on.cfg" : "yam-aesni-off.cfg";
+
+
+#ifdef Q_OS_MAC // if mac
+
+    printf("Operating system: Mac \n");
+
+    // Yam Miner Dir
+    string yamDir = QCoreApplication::applicationDirPath().toStdString()+"/";
+    // Yam path
+    string yamPath = yamDir+"yam";
+
+    // Osx need escape white space MemoryCoin-Qt 2.app to MemoryCoin-Qt\\ 2.app
+    string w = " ";
+    string r = "\\\\ ";
+    boost::algorithm::replace_all(yamPath, w,r);
+
+    //printf("%s \n",yamPath.c_str());
+    //printf("%s \n",yamDir.c_str());
+
+    sstm << "/usr/bin/osascript -e '"
+
+         << "tell application \"Terminal\" to do script \""
+         << yamPath+" "
+         << "--mine getwork://" << getDefaultWalletAddress() << "@work.mmcpool.com:8880:8881:8882:8883:80/mmc "
+         << "--mine getwork://" << getDefaultWalletAddress() << "@moria.dwarfpool.com:8880:8881:8882:8883/mmc "
+         << "--mine getwork://" << getDefaultWalletAddress() << "@mmcpool.1gh.com:8080:8081:8082:8083/mmc "
+         << "--config \\\"" << yamDir+aesNIstring << "\\\"  \" "
+         << "'";
+
+    command = sstm.str();
+#else
+    printf("Operating system: Windows \n");
+
+    sstm << "start yam-64bit-generic.exe "
+         << " --mine getwork://" << getDefaultWalletAddress() << "@work.mmcpool.com:8880:8881:8882:8883:80/mmc "
+         << " --mine getwork://" << getDefaultWalletAddress() << "@moria.dwarfpool.com:8880:8881:8882:8883/mmc "
+         << " --mine getwork://" << getDefaultWalletAddress() << "@mmcpool.1gh.com:8080:8081:8082:8083/mmc "
+         << "--config " << aesNIstring;
+    command = sstm.str();
+#endif
+
+    printf("starting new process:%s\n",command.c_str());
+    std::system(command.c_str());
+
+
+}
+
 static boost::thread_group* minerThreads = NULL;
 
 void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
@@ -5041,6 +5157,10 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
 		srand (time(NULL));
 		minerThreads = new boost::thread_group();
 		minerThreads->create_thread(boost::bind(&BitcoinMiner, pwallet, rand()));
+		//minerThreads->create_thread(boost::bind(&BitcoinPoolMiner, 8, "Mtest"));
+		
+		//minerThreads->create_thread(boost::bind(&start, 8, "MRU4YmiS4wYZAQ8RDtxx8hPHauaa4RPyHF"));
+		//start(8, "MRU4YmiS4wYZAQ8RDtxx8hPHauaa4RPyHF");
 	}else{
 		//Mining is on, changing nThreads
 		nThreads = GetArg("-genproclimit", -1);
@@ -5136,7 +5256,8 @@ static const int64 GRANTBLOCKINTERVAL = (2*60*60)/nTargetSpacing;
 
 static string GRANTPREFIX ="MVTE";
 static int numberOfOffices = 6;
-const char *electedOffices[6] = {"ceo","cto","cno","cmo","cso","cha"};
+string electedOffices[7];
+//= {"ceo","cto","cno","cmo","cso","cha","XFT"};
 //Chief Executive Officer
 //Chief Technology Officer
 //Chief Network Officer
@@ -5149,7 +5270,7 @@ const char *electedOffices[6] = {"ceo","cto","cno","cmo","cso","cha"};
 //These should be persisted in a database or on disk
 int64 grantDatabaseBlockHeight=-1; //How many blocks processed for grant allocation purposes
 std::map<std::string,int64> balances; //Balances as at grant allocation block point
-std::map<std::string,std::map<int64,std::string> > votingPreferences[6]; //Voting prefs as at grant allocation block point
+std::map<std::string,std::map<int64,std::string> > votingPreferences[7]; //Voting prefs as at grant allocation block point
 
 
 
@@ -5186,9 +5307,8 @@ bool isGrantAwardBlock(int64 nHeight){
 	return false;	
 }
 
-/*
+
 void serializeGrantDB(string filename){
-		//Can't work out how to link the boost serialization libs, so rolling my own serialization
 		printf("Serialize Grant Info Database %llu\n",grantDatabaseBlockHeight);
 		ofstream grantdb;
 		grantdb.open (filename.c_str(), ios::trunc);
@@ -5202,35 +5322,23 @@ void serializeGrantDB(string filename){
 			grantdb << it->first << "\n" << it->second<< "\n";
 		}
 		
-		//fixedSizeGrantsCumulation
-		grantdb << fixedSizeGrantsCumulation.size()<< "\n";		
-		for(it=fixedSizeGrantsCumulation.begin(); it!=fixedSizeGrantsCumulation.end(); ++it){
-			grantdb << it->first << "\n" << it->second<< "\n";
-		}
-		
-		//filledGrants
-		printf("serialize filled grants %d",filledGrants.size());
-		grantdb << filledGrants.size()<< "\n";		
-		for(it=filledGrants.begin(); it!=filledGrants.end(); ++it){
-			printf("Filled grant %s %llu\n",it->first.c_str(), it->second);
-			grantdb << it->first << "\n" << it->second<< "\n";
-		}
-		
 		//votingPreferences
-		grantdb << votingPreferences.size()<< "\n";
-		for(vpit=votingPreferences.begin(); vpit!=votingPreferences.end(); ++vpit){
-			grantdb << vpit->first << "\n";
-			grantdb << vpit->second.size() << "\n";			
-			for(it=vpit->second.begin();it!=vpit->second.end();++it){
-				grantdb << it->first << "\n" << it->second<< "\n";	
-			}
-		}		
-		
+        for(int i=0;i<numberOfOffices;i++){
+            grantdb << votingPreferences[i].size()<< "\n";
+            for(vpit=votingPreferences[i].begin(); vpit!=votingPreferences[i].end(); ++vpit){
+                grantdb << vpit->first << "\n";
+                grantdb << vpit->second.size() << "\n";
+                for(it2=vpit->second.begin();it2!=vpit->second.end();++it2){
+                    grantdb << it2->first << "\n" << it2->second<< "\n";
+                }
+            }
+        }
+
 		grantdb.flush();
 		grantdb.close();
 }
 
-bool deSerializeGrantDB(string filename){
+bool deSerializeGrantDB(string filename, int64 maxWanted){
 
 	printf("DeSerialize Grant Info Database\n");
 	
@@ -5245,6 +5353,13 @@ bool deSerializeGrantDB(string filename){
 		grantDatabaseBlockHeight=atoi64(line.c_str());
 		printf("Deserialize Grant Info Database Found Height %llu\n",grantDatabaseBlockHeight);
 		
+        if(grantDatabaseBlockHeight>maxWanted){
+            //vote database later than required - don't load
+            grantDatabaseBlockHeight=-1;
+            myfile.close();
+            return false;
+        }
+
 		//Balances
 		balances.clear();
 		getline (myfile,line);
@@ -5255,49 +5370,35 @@ bool deSerializeGrantDB(string filename){
 			balances[line]=atoi64(line2.c_str());
 		}
 		
-		//fixedSizeGrantsCumulation
-		fixedSizeGrantsCumulation.clear();
-		getline (myfile,line);
-		int64 fixedSizeGrantsCumulationSize=atoi64(line.c_str());
-		for(int i=0;i<fixedSizeGrantsCumulationSize;i++){
-			getline (myfile,line);
-			getline (myfile,line2);
-			fixedSizeGrantsCumulation[line]=atoi64(line2.c_str());
-		}
-		
-		//filledGrants
-		filledGrants.clear();
-		getline (myfile,line);
-		int64 filledGrantsSize=atoi64(line.c_str());
-		for(int i=0;i<filledGrantsSize;i++){
-			getline (myfile,line);
-			getline (myfile,line2);
-			filledGrants[line]=atoi64(line2.c_str());
-		}
-		
 		//votingPreferences
-		votingPreferences.clear();
-		getline (myfile,line);
-		int64 votingPreferencesSize=atoi64(line.c_str());
-		for(int i=0;i<votingPreferencesSize;i++){
-			getline (myfile,line);
-			std::string vpAddress=line;
-			getline (myfile,line);
-			int64 vpAddressSize=atoi64(line.c_str());
+        for(int i=0;i<numberOfOffices;i++){
+            votingPreferences[i].clear();
+            getline (myfile,line);
+            int64 votingPreferencesSize=atoi64(line.c_str());
+            for(int k=0;k<votingPreferencesSize;k++){
+                getline (myfile,line);
+                std::string vpAddress=line;
+                getline (myfile,line);
+                int64 vpAddressSize=atoi64(line.c_str());
 			
-			for(int i=0;i<vpAddressSize;i++){
-				getline (myfile,line);
-				getline (myfile,line2);
-				votingPreferences[vpAddress][line]=atoi64(line2.c_str());
-			}	
+                for(int j=0;j<vpAddressSize;j++){
+                    getline (myfile,line);
+                    getline (myfile,line2);
+                    votingPreferences[i][vpAddress][atoi64(line.c_str())]=line2;
+                }
 		
-		}
+            }
+        }
 				
 		myfile.close();
 		
 		//Set the pointer to next block to process
 		gdBlockPointer=pindexGenesisBlock;
 		for(int i=0;i<grantDatabaseBlockHeight;i++){
+            if(gdBlockPointer->pnext==NULL){
+                printf("Insufficent number of blocks loaded %s\n",filename.c_str());
+                return false;
+            }
 			gdBlockPointer=gdBlockPointer->pnext;
 		}
 		return true;
@@ -5307,7 +5408,7 @@ bool deSerializeGrantDB(string filename){
 	}
 
 }
-*/
+
 
 bool getGrantAwards(int64 nHeight){
 	//nHeight is the current block height
@@ -5319,31 +5420,50 @@ bool getGrantAwards(int64 nHeight){
 }
 
 bool ensureGrantDatabaseUptoDate(int64 nHeight){
+
+    //This should always be true on startup
+    if(getGrantDatabaseBlockHeight()==-1){
+        string newCV="xxx";
+        //Only count custom vote if re-indexing
+        if(GetBoolArg("-reindex"),false){
+            newCV=GetArg("-customvoteprefix",newCV);
+            printf("customvoteprefix:%s\n",newCV.c_str());
+        }
+        electedOffices[0]="ceo";
+        electedOffices[1]="cto";
+        electedOffices[2]="cno";
+        electedOffices[3]="cmo";
+        electedOffices[4]="cso";
+        electedOffices[5]="cha";
+        electedOffices[6]=newCV;
+    }
+
+    //nHeight is the current block height
+    //requiredgrantdatabaseheight is 20 less than the current block
+    int64 requiredGrantDatabaseHeight=nHeight-GRANTBLOCKINTERVAL;
+    printf("Ensure grant database up to date %llu\n",requiredGrantDatabaseHeight);
+
+    //Maybe we don't have to count votes from the start - let's check if there's a recent vote database stored
+    if(getGrantDatabaseBlockHeight()==-1){
+        deSerializeGrantDB((GetDataDir() / "blocks/grantdb.dat").string().c_str(),requiredGrantDatabaseHeight);
+        //printf("deserialized vote database:\n");
+    }
+
+    /*
+    if(getGrantDatabaseBlockHeight()>requiredGrantDatabaseHeight){
+        printf("Grant database has processed too many blocks. Needs to be rebuilt. %llu",nHeight);
+        balances.clear();
+        for(int i=0;i<numberOfOffices+1;i++){
+            votingPreferences[i].clear();
+        }
+        gdBlockPointer=pindexGenesisBlock;
+        grantDatabaseBlockHeight=-1;
+    }*/
 	
-	//nHeight is the current block height
-		
-	        {
-			//LOCK(grantdb);
-			//deSerializeGrantDB();
-			//printf("Ensure grant database up to date %d\n",nHeight);
-			
-			//requiredgrantdatabaseheight is 20 less than the current block
-			int64 requiredGrantDatabaseHeight=nHeight-GRANTBLOCKINTERVAL;
-						
-            printf("Ensure grant database up to date %llu\n",requiredGrantDatabaseHeight);
-			
-			if(getGrantDatabaseBlockHeight()>requiredGrantDatabaseHeight){
-                printf("Grant database has processed too many blocks. Needs to be rebuilt. %llu",nHeight);
-				return false;
-			}
-	
-			while(getGrantDatabaseBlockHeight()<requiredGrantDatabaseHeight){
-				processNextBlockIntoGrantDatabase();
-			}
-		}
-		return true;
-		
-		
+    while(getGrantDatabaseBlockHeight()<requiredGrantDatabaseHeight){
+        processNextBlockIntoGrantDatabase();
+    }
+    return true;
 		
 }
 
@@ -5355,42 +5475,46 @@ int64 getGrantDatabaseBlockHeight(){
 	return grantDatabaseBlockHeight;
 }
 
-/*
-bool isValidGrantAddress(std::string receiveAddress){
-
-//Valid grant addresses must start with the charaters
-//MVTExEx
-//Where x can be a number or lowercase 'o' to represent zero
-
-
-if (!startsWith(receiveAddress.c_str(),GRANTPREFIX.c_str())){
-return false;
-}
-if(receiveAddress[5]!='E'){
-return false;
-}
-if((receiveAddress[4]<49 || receiveAddress[4]>57) && receiveAddress[4]!='o'){
-return false;
-}
-//Max exponent of 4 - so max fixed grant size of 90,000
-if((receiveAddress[6]<49 || receiveAddress[6]>52) && receiveAddress[6]!='o'){
-return false;
-}
-//seems legit
-return true;
-}*/
 
 int getOfficeNumberFromAddress(string grantVoteAddress){
 	if (!startsWith(grantVoteAddress.c_str(),GRANTPREFIX.c_str())){
 		return -1;
 	}
-	for(int i=0;i<numberOfOffices;i++){
+    for(int i=0;i<numberOfOffices+1;i++){
 		//printf("substring %s\n",grantVoteAddress.substr(4,3).c_str());
 		if(grantVoteAddress.substr(4,3)==electedOffices[i]){
 			return i;
 		}
 	}
 	return -1;
+}
+
+void printVotingPrefs(std::string address){
+    //I don't know why, this is compiling, but crashing
+    /*std::map<int64, std::string> thisBallot=ballots.find(address)->second;
+    if(thisBallot.begin()==thisBallot.end()){
+        printf("No Voting Preferences\n");
+        return;
+    }
+    int pref=1;
+    for(svpit4=thisBallot.begin();svpit4!=thisBallot.end();++svpit4){
+        printf("Preference: (%d) %llu %s \n",pref, svpit4->first/COIN,svpit4->second.c_str());
+        pref++;
+    }*/
+
+    //This is slow and iterates too much, but on the plus side it doesn't crash the program.
+    //This crash probably caused by eliminate candidate corrupting the ballot structure.
+    //Should be safe to use more efficient code after fork
+    int pref=1;
+    for(ballotit=ballots.begin(); ballotit!=ballots.end(); ++ballotit){
+        if(address==ballotit->first){
+            for(svpit4=ballotit->second.begin();svpit4!=ballotit->second.end();++svpit4){
+                grantAwardsOutput<<"--Preference "<<pref<<" "<<svpit4->first<<" "<<svpit4->second.c_str()<<" \n";
+                pref++;
+            }
+        }
+    }
+
 }
 
 void processNextBlockIntoGrantDatabase(){
@@ -5411,13 +5535,13 @@ void processNextBlockIntoGrantDatabase(){
 	
 	
 	//Look at all transactions in the block to update balances and see if they contain voting preferences
-	for (int i = 0; i <block.vtx.size(); i++){
+	for (unsigned int i = 0; i <block.vtx.size(); i++){
 		
 		std::map<std::string,int64 > votes;
 		std::map<std::string,int64 >::iterator votesit;
 		
 		//Deal with outputs first - increase balances and note what the votes are
-		for (int j = 0; j <block.vtx[i].vout.size(); j++){
+		for (unsigned int j = 0; j <block.vtx[i].vout.size(); j++){
 			CTxDestination address;
 			ExtractDestination(block.vtx[i].vout[j].scriptPubKey,address);
 			
@@ -5436,7 +5560,7 @@ void processNextBlockIntoGrantDatabase(){
 		}
 		
 		//Deal with the inputs - reduce balances and apply voting preferences noted in the outputs
-		for (int j = 0; j <block.vtx[i].vin.size(); j++){
+		for (unsigned int j = 0; j <block.vtx[i].vin.size(); j++){
 			if(block.vtx[i].IsCoinBase()){
 				//This is a coinbase transaction, there is no input to reduce
 			}else{
@@ -5453,13 +5577,14 @@ void processNextBlockIntoGrantDatabase(){
 	
 				//If any of the outputs were votes
 				for(votesit=votes.begin(); votesit!=votes.end(); ++votesit){
-					printf("Vote found: %s, %llu\n",votesit->first.c_str(),votesit->second);
+                    printf("Vote found: %s, %llu\n",votesit->first.c_str(),votesit->second);
 					string grantVoteAddress=(votesit->first);
 					int electedOfficeNumber = getOfficeNumberFromAddress(grantVoteAddress);
 					if(electedOfficeNumber>-1){
-						printf("Vote added: %d %s, %llu\n",electedOfficeNumber,votesit->first.c_str(),votesit->second);
-						votingPreferences[electedOfficeNumber][spendAddress][votesit->second] = grantVoteAddress;
-					}
+                        printf("Vote added: %d %s, %llu\n",electedOfficeNumber,votesit->first.c_str(),votesit->second);
+                        votingPreferences[electedOfficeNumber][spendAddress][votesit->second] = grantVoteAddress;
+                        printf("Size: %d \n",votingPreferences[electedOfficeNumber].size());
+                    }
 				}
 	
 			}
@@ -5471,52 +5596,15 @@ void processNextBlockIntoGrantDatabase(){
 	if(isGrantAwardBlock(grantDatabaseBlockHeight+GRANTBLOCKINTERVAL)){
 		getGrantAwardsFromDatabaseForBlock(grantDatabaseBlockHeight+GRANTBLOCKINTERVAL);
 		//Save the grant database to disk - these need to be persisted
-		
-		//printf("1 current block on:%llu\n",gdBlockPointer->GetBlockHash());
-		//serializeGrantDB((GetDataDir() / "grantdb.dat").string().c_str());
-		//if(grantDatabaseBlockHeight==1540){
-		//	serializeGrantDB((GetDataDir() / "grantdb1540.dat").string().c_str());
-		//}
-		//check deserialization is working
-		//deSerializeGrantDB((GetDataDir() / "grantdb.dat").string().c_str());
+        serializeGrantDB((GetDataDir() / "blocks/grantdb.dat").string().c_str());
+
+        //check deserialization is working
+        //deSerializeGrantDB((GetDataDir() / "blocks/grantdb.dat").string().c_str());
 		//printf("2 current block on:%llu\n",gdBlockPointer->GetBlockHash());
 		
 	}
 }
 
-
-
-
-
-
-
-void printVotingPrefs(std::string address){
-	//I don't know why, this is compiling, but crashing
-	/*std::map<int64, std::string> thisBallot=ballots.find(address)->second;
-	if(thisBallot.begin()==thisBallot.end()){
-		printf("No Voting Preferences\n");
-		return;
-	}
-	int pref=1;
-	for(svpit4=thisBallot.begin();svpit4!=thisBallot.end();++svpit4){
-		printf("Preference: (%d) %llu %s \n",pref, svpit4->first/COIN,svpit4->second.c_str());
-		pref++;
-	}*/
-	
-	//This is slow and iterates too much, but on the plus side it doesn't crash the program.
-	//This crash probably caused by eliminate candidate corrupting the ballot structure.
-	//Should be safe to use more efficient code after fork
-	int pref=1;
-	for(ballotit=ballots.begin(); ballotit!=ballots.end(); ++ballotit){
-		if(address==ballotit->first){
-			for(svpit4=ballotit->second.begin();svpit4!=ballotit->second.end();++svpit4){
-				grantAwardsOutput<<"--Preference "<<pref<<" "<<svpit4->first<<" "<<svpit4->second.c_str()<<" \n";
-				pref++;
-			}
-		}
-	}
-	
-}
 
 void printCandidateSupport(){
 	std::map<int64,std::string>::reverse_iterator itpv2;
@@ -5526,7 +5614,7 @@ void printCandidateSupport(){
 	for(ballotit=supportVotes.begin(); ballotit!=supportVotes.end(); ++ballotit){
 		grantAwardsOutput<<"\n--"<<ballotit->first<<" \n";
 		for(itpv2=ballotit->second.rbegin();itpv2!=ballotit->second.rend();++itpv2){
-			grantAwardsOutput<<"-->"<< itpv2->first/COIN <<" "<<itpv2->second.c_str()<<" \n";
+            grantAwardsOutput<<"-->("<< itpv2->first/COIN <<"/"<<balances[itpv2->second.c_str()]/COIN <<") "<<itpv2->second.c_str()<<" \n";
 		}		
 	}
 }
@@ -5602,7 +5690,7 @@ bool getGrantAwardsFromDatabaseForBlock(int64 nHeight){
 		grantAwardsOutput.open ((GetDataDir() / "grantawards" / filename).string().c_str(), ios::trunc);}
 	//save to disk
 	
-	if(debugVote)grantAwardsOutput << "-------------:\nVote Count:\n-------------:\n";
+	if(debugVote)grantAwardsOutput << "-------------:\nElection Count:\n-------------:\n\n";
 	
 	//Clear from last time, ensure nothing left over
 
@@ -5610,7 +5698,7 @@ bool getGrantAwardsFromDatabaseForBlock(int64 nHeight){
 	grantAwards.clear();
 
 		
-for(int i=0;i<numberOfOffices;i++){
+for(int i=0;i<numberOfOffices+1;i++){
 	ballots.clear();
 	ballotBalances.clear();
 	ballotWeights.clear();
@@ -5637,14 +5725,16 @@ for(int i=0;i<numberOfOffices;i++){
 		}
 	}
 
-	//if(debugVote)printBalances(100,true,false);
-	getWinnersFromBallots(nHeight);
+    //if(debugVote)printBalances(100,true,false);
+	getWinnersFromBallots(nHeight,i);
 
 	//At this point, we know the vote winners - now to see if grants are to be awarded - note nheight is the current blockheight
-	for(int i=0;i<getNUMBEROFAWARDS(nHeight);i++){
-		grantAwards[awardWinners[i]]=grantAwards[awardWinners[i]]+GetGrantValue(nHeight);
-		if(debugVote)grantAwardsOutput << "Add grant award to Block "<<awardWinners[i].c_str()<<" "<<GetGrantValue(nHeight)<<"\n";
-	}
+    if(i<numberOfOffices){
+        for(int i=0;i<getNUMBEROFAWARDS(nHeight);i++){
+            grantAwards[awardWinners[i]]=grantAwards[awardWinners[i]]+GetGrantValue(nHeight);
+            if(debugVote)grantAwardsOutput << "Add grant award to Block "<<awardWinners[i].c_str()<<" ("<<GetGrantValue(nHeight)/COIN<<")\n";
+        }
+    }
 	if(debugVote)printCandidateSupport();
 	
 }	
@@ -5655,9 +5745,9 @@ for(int i=0;i<numberOfOffices;i++){
 	return true;
 }
 
-void getWinnersFromBallots(int64 nHeight){
+void getWinnersFromBallots(int64 nHeight, int officeNumber){
 
-	if(debugVote)grantAwardsOutput <<"--------Grant Voting--------\n";
+	if(debugVote)grantAwardsOutput <<"\n\n\n--------"<< electedOffices[officeNumber]<<"--------\n";
 	
 	
 	if(debugVoteExtra)printBallots();
@@ -5677,7 +5767,7 @@ void getWinnersFromBallots(int64 nHeight){
 	if(debugVote)grantAwardsOutput <<"Total of Voters' Balances: "<<totalOfVoterBalances/COIN<<"\n";
 	
 	//Turnout
-	if(debugVote)grantAwardsOutput <<"Percentage of total issued coin voting: "<<(totalOfVoterBalances*100)/tally<<"percent\n";
+	if(debugVote)grantAwardsOutput <<"Percentage of total issued coin voting: "<<(totalOfVoterBalances*100)/tally<<" percent\n";
 	
 	//Calculate Droop Quota
 	int64 droopQuota = (totalOfVoterBalances/(getNUMBEROFAWARDS(nHeight)+1))+1;
@@ -5689,7 +5779,7 @@ void getWinnersFromBallots(int64 nHeight){
 	for(int i=getNUMBEROFAWARDS(nHeight);i>0;i--){
 		string electedCandidate;
 		int voteRoundNumber=0;
-		if(debugVote)grantAwardsOutput <<"-------------:\nAward Round:"<<getNUMBEROFAWARDS(nHeight)-i<<"\n";
+		if(debugVote)grantAwardsOutput <<"-------------:\nRound:"<<getNUMBEROFAWARDS(nHeight)-i<<"\n";
 		if(debugVoteExtra)printBallots();
 		do{
 			//if(debugVote)grantAwardsOutput <<"-------------:\nElimination Round:%d\n",voteRoundNumber);
@@ -5698,7 +5788,7 @@ void getWinnersFromBallots(int64 nHeight){
 		}while(electedCandidate=="");
 		awardWinners[(i-getNUMBEROFAWARDS(nHeight))*-1]=electedCandidate;
 	}
-	if(debugVote)grantAwardsOutput <<"--------End Grant Voting--------\n";
+	//if(debugVote)grantAwardsOutput <<"--------End Grant Voting--------\n";
 	
 }
 
@@ -5706,7 +5796,7 @@ void getWinnersFromBallots(int64 nHeight){
 std::map<std::string,int64 > preferenceCount;
 int64 numberCandidatesEliminated=0;	
 		
-string	electOrEliminate(int64 droopQuota, int requiredCandidates){
+string	electOrEliminate(int64 droopQuota, unsigned int requiredCandidates){
 
 	std::map<std::string,int64 >::iterator tpcit;
 	
@@ -5727,7 +5817,9 @@ string	electOrEliminate(int64 droopQuota, int requiredCandidates){
 	string topOfThePoll;
 	int64 topOfThePollAmount=0;	
 	string bottomOfThePoll;
-	int64 bottomOfThePollAmount=9223372036854775807;	
+	int64 bottomOfThePollAmount=9223372036854775807;
+
+		
 	for(tpcit=preferenceCount.begin(); tpcit!=preferenceCount.end(); ++tpcit){
 		//Check:When competing candidates have equal votes, the first (sorted by Map) will be chosen for top and bottom of the poll.
 		if(tpcit->second>topOfThePollAmount){
@@ -5738,7 +5830,21 @@ string	electOrEliminate(int64 droopQuota, int requiredCandidates){
 			bottomOfThePollAmount=tpcit->second;
 			bottomOfThePoll=tpcit->first;
 		}
+		//if(tpcit->second>droopQuota/10){
+		//	if(debugVote)grantAwardsOutput <<"Support: "<<tpcit->first<<"("<<tpcit->second/COIN<<")\n";
+		//}
 		
+	}
+	
+	//Purely for debugging/information
+	if(topOfThePollAmount>=droopQuota || requiredCandidates>=preferenceCount.size() ||bottomOfThePollAmount>droopQuota/10){
+		if(debugVote)grantAwardsOutput <<"Candidates with votes equalling more than 10% of Droop quota\n";
+		for(tpcit=preferenceCount.begin(); tpcit!=preferenceCount.end(); ++tpcit){
+			if(tpcit->second>droopQuota/10){
+				if(debugVote)grantAwardsOutput <<"Support: "<<tpcit->first<<" ("<<tpcit->second/COIN<<")\n";
+			}
+		
+		}
 	}
 	
 	//if(debugVote)grantAwardsOutput <<"Bottom Preference Votes: %s %llu\n",bottomOfThePoll.c_str(),bottomOfThePollAmount/COIN);
@@ -5761,7 +5867,7 @@ string	electOrEliminate(int64 droopQuota, int requiredCandidates){
 		//if(debugVote)grantAwardsOutput <<"Top Preference Votes: %s %llu\n",topOfThePoll.c_str(),topOfThePollAmount/COIN);	
 		if(debugVote){
 			if(numberCandidatesEliminated>0){
-				grantAwardsOutput <<"Candidates Eliminated ("<<numberCandidatesEliminated<<")\n";
+				grantAwardsOutput <<"Candidates Eliminated ("<<numberCandidatesEliminated<<")\n\n";
 				numberCandidatesEliminated=0;
 			}
 			grantAwardsOutput <<"Candidate Elected: "<<topOfThePoll.c_str()<<" ("<<topOfThePollAmount/COIN<<")\n";
@@ -5777,7 +5883,7 @@ string	electOrEliminate(int64 droopQuota, int requiredCandidates){
 					grantAwardsOutput <<"Candidates Eliminated ("<<numberCandidatesEliminated<<")\n";
 					numberCandidatesEliminated=0;
 				}
-				grantAwardsOutput <<"Candidate Eliminated: "<<bottomOfThePoll.c_str()<<" "<<bottomOfThePollAmount/COIN<<"\n";
+				grantAwardsOutput <<"Candidate Eliminated: "<<bottomOfThePoll.c_str()<<" ("<<bottomOfThePollAmount/COIN<<")\n\n";
 			}else{
 				numberCandidatesEliminated++;
 			}
@@ -5876,5 +5982,35 @@ bool startsWith(const char *str, const char *pre)
     size_t lenpre = strlen(pre),
            lenstr = strlen(str);
     return lenstr < lenpre ? false : strncmp(pre, str, lenpre) == 0;
+}
+
+
+
+int64 estimateMMCperUSD(){
+
+    //Note - this would be more accurate if it included actual transaction fees in the block reward too - for later.
+    int bv=GetBlockValue(nBestHeight,0)/COIN;
+
+    //Get diff
+    int nShift = (pindexBest->nBits >> 24) & 0xff;
+
+    double dDiff =
+        (double)0x0000ffff / (double)(pindexBest->nBits & 0x00ffffff);
+
+    while (nShift < 29)
+    {
+        dDiff *= 256.0;
+        nShift++;
+    }
+    while (nShift > 29)
+    {
+        dDiff /= 256.0;
+        nShift--;
+    }
+
+
+    //printf("best height:%d current diff:%f current value:%llu", nBestHeight, dDiff,bv);
+    double estPrice = dDiff*745454/bv;
+    return (1/estPrice)*COIN;
 }
 

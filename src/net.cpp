@@ -27,7 +27,7 @@
 using namespace std;
 using namespace boost;
 
-static const int MAX_OUTBOUND_CONNECTIONS = 4;
+static int MAX_OUTBOUND_CONNECTIONS = 8;
 
 bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
 
@@ -70,6 +70,12 @@ vector<std::string> vAddedNodes;
 CCriticalSection cs_vAddedNodes;
 
 static CSemaphore *semOutbound = NULL;
+
+bool churnNode=false;
+void setChurnMode(){
+	churnNode=true;
+	MAX_OUTBOUND_CONNECTIONS = 50;
+}
 
 void AddOneShot(string strDest)
 {
@@ -1049,6 +1055,12 @@ void ThreadSocketHandler()
                     printf("socket inactivity timeout\n");
                     pnode->fDisconnect = true;
                 }
+		else if (churnNode && (pnode->fInbound==true && GetTime() - pnode->nTimeConnected > 600))
+                {
+		//If set to churn this is an inbound connection, and has been connected for more than 10 minutes, disconnect it to make room for other new nodes.
+                    printf("new node churn\n");
+                    pnode->fDisconnect = true;
+                }
             }
         }
         {
@@ -1191,11 +1203,17 @@ void MapPort(bool)
 // The first name is used as information source for addrman.
 // The second name should resolve to a list of seed addresses.
 static const char *strMainNetDNSSeed[][2] = {
+//Churn
     {"81.17.19.139", "81.17.19.139"},
-    {"180.183.155.90", "180.183.155.90"},
-    {"113.94.7.14", "113.94.7.14"},
-    {"64.120.43.226", "64.120.43.226"},
-    {"69.30.254.58", "69.30.254.58"},
+    {"69.197.161.42", "69.197.161.42"},
+    {"109.120.170.136", "109.120.170.136"},
+    {"151.236.22.84", "151.236.22.84"},
+    {"158.255.208.40", "158.255.208.40"},
+    {"151.236.15.106", "151.236.15.106"},
+    {"192.241.155.129", "192.241.155.129"},
+    {"109.120.170.136", "109.120.170.136"},
+//Standard
+    {"78.46.66.139", "78.46.66.139"},
     {NULL, NULL}
 };
 

@@ -217,6 +217,7 @@ static const CRPCCommand vRPCCommands[] =
     { "getnewaddress",          &getnewaddress,          true,      false },
     { "getaccountaddress",      &getaccountaddress,      true,      false },
     { "setaccount",             &setaccount,             true,      false },
+    { "setdefaultaddress",      &setdefaultaddress,      true,      false },
     { "getaccount",             &getaccount,             false,     false },
     { "getaddressesbyaccount",  &getaddressesbyaccount,  true,      false },
     { "sendtoaddress",          &sendtoaddress,          false,     false },
@@ -253,6 +254,7 @@ static const CRPCCommand vRPCCommands[] =
     { "listsinceblock",         &listsinceblock,         false,     false },
     { "dumpprivkey",            &dumpprivkey,            true,      false },
     { "importprivkey",          &importprivkey,          false,     false },
+    { "importmemorywallet",     &importmemorywallet,          false,     false },
     { "listunspent",            &listunspent,            false,     false },
     { "getrawtransaction",      &getrawtransaction,      false,     false },
     { "createrawtransaction",   &createrawtransaction,   false,     false },
@@ -1193,7 +1195,7 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     if (strMethod == "lockunspent"            && n > 0) ConvertTo<bool>(params[0]);
     if (strMethod == "lockunspent"            && n > 1) ConvertTo<Array>(params[1]);
     if (strMethod == "importprivkey"          && n > 2) ConvertTo<bool>(params[2]);
-
+    if (strMethod == "importmemorywallet"     && n > 2) ConvertTo<bool>(params[2]);
     return params;
 }
 

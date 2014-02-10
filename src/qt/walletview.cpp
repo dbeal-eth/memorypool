@@ -9,6 +9,7 @@
 #include "transactiontablemodel.h"
 #include "addressbookpage.h"
 #include "sendcoinsdialog.h"
+#include "votecoinsdialog.h"
 #include "signverifymessagedialog.h"
 #include "clientmodel.h"
 #include "walletmodel.h"
@@ -54,6 +55,7 @@ WalletView::WalletView(QWidget *parent, BitcoinGUI *_gui):
     receiveCoinsPage = new AddressBookPage(AddressBookPage::ForEditing, AddressBookPage::ReceivingTab);
 
     sendCoinsPage = new SendCoinsDialog(gui);
+    voteCoinsPage = new VoteCoinsDialog(gui);
 
     signVerifyMessageDialog = new SignVerifyMessageDialog(gui);
 
@@ -62,6 +64,8 @@ WalletView::WalletView(QWidget *parent, BitcoinGUI *_gui):
     addWidget(addressBookPage);
     addWidget(receiveCoinsPage);
     addWidget(sendCoinsPage);
+    addWidget(voteCoinsPage);
+
 
     // Clicking on a transaction on the overview page simply sends you to transaction history page
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), this, SLOT(gotoHistoryPage()));
@@ -116,6 +120,8 @@ void WalletView::setWalletModel(WalletModel *walletModel)
         addressBookPage->setModel(walletModel->getAddressTableModel());
         receiveCoinsPage->setModel(walletModel->getAddressTableModel());
         sendCoinsPage->setModel(walletModel);
+        voteCoinsPage->setModel(walletModel);
+
         signVerifyMessageDialog->setModel(walletModel);
 
         setEncryptionStatus();
@@ -127,6 +133,8 @@ void WalletView::setWalletModel(WalletModel *walletModel)
 
         // Ask for passphrase if needed
         connect(walletModel, SIGNAL(requireUnlock()), this, SLOT(unlockWallet()));
+        this->gui->setWindowTitle(tr("MemoryCoin") + " - " + tr("Wallet") + " - " + walletModel->getDefaultWalletAddress().c_str());
+
     }
 }
 
@@ -177,6 +185,16 @@ void WalletView::gotoSendCoinsPage(QString addr)
 
     if (!addr.isEmpty())
         sendCoinsPage->setAddress(addr);
+}
+
+void WalletView::gotoVoteCoinsPage(QString addr)
+{
+    gui->getVoteCoinsAction()->setChecked(true);
+    setCurrentWidget(voteCoinsPage);
+    voteCoinsPage->checkSweep();
+
+    if (!addr.isEmpty())
+        voteCoinsPage->setAddress(addr);
 }
 
 void WalletView::gotoSignMessageTab(QString addr)

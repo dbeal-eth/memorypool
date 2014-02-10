@@ -59,14 +59,23 @@ public:
         cachedAddressTable.clear();
         {
             LOCK(wallet->cs_wallet);
+            string mainAddress = wallet->getDefaultWalletAddress();
             BOOST_FOREACH(const PAIRTYPE(CTxDestination, std::string)& item, wallet->mapAddressBook)
             {
                 const CBitcoinAddress& address = item.first;
                 const std::string& strName = item.second;
                 bool fMine = IsMine(*wallet, address.Get());
+
+                if(!fMultiAddress){
+                    //Only add to receiving table if it is the main address
+                    if(fMine && mainAddress!=address.ToString()){
+                        continue;
+                    }
+                }
                 cachedAddressTable.append(AddressTableEntry(fMine ? AddressTableEntry::Receiving : AddressTableEntry::Sending,
                                   QString::fromStdString(strName),
                                   QString::fromStdString(address.ToString())));
+
             }
         }
         // qLowerBound() and qUpperBound() require our cachedAddressTable list to be sorted in asc order
