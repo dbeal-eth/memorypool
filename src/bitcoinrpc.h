@@ -6,6 +6,7 @@
 #ifndef _BITCOINRPC_H_
 #define _BITCOINRPC_H_ 1
 
+#include <boost/asio.hpp>
 #include <string>
 #include <list>
 #include <map>
@@ -132,6 +133,7 @@ extern double GetDifficulty(const CBlockIndex* blockindex = NULL);
 extern std::string HexBits(unsigned int nBits);
 extern std::string HelpRequiringPassphrase();
 extern void EnsureWalletIsUnlocked();
+boost::asio::io_service* getIO_service();
 
 extern json_spirit::Value getconnectioncount(const json_spirit::Array& params, bool fHelp); // in rpcnet.cpp
 extern json_spirit::Value getpeerinfo(const json_spirit::Array& params, bool fHelp);
@@ -197,5 +199,13 @@ extern json_spirit::Value getblockhash(const json_spirit::Array& params, bool fH
 extern json_spirit::Value getblock(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value gettxoutsetinfo(const json_spirit::Array& params, bool fHelp);
 extern json_spirit::Value gettxout(const json_spirit::Array& params, bool fHelp);
+
+extern json_spirit::Value gethashrate(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getnumclients(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getroundshareinfo(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getfoundblocks(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value listtopminers(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value listpayouts(const json_spirit::Array& params, bool fHelp);
+extern json_spirit::Value getuserinfo(const json_spirit::Array& params, bool fHelp);
 
 #endif

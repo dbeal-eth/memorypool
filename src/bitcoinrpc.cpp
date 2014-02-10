@@ -46,6 +46,8 @@ static inline unsigned short GetDefaultRPCPort()
     return GetBoolArg("-testnet", false) ? 11925 : 1925;
 }
 
+asio::io_service* getIO_service() { return rpc_io_service; }
+
 Object JSONRPCError(int code, const string& message)
 {
     Object error;
@@ -261,6 +263,13 @@ static const CRPCCommand vRPCCommands[] =
     { "gettxout",               &gettxout,               true,      false },
     { "lockunspent",            &lockunspent,            false,     false },
     { "listlockunspent",        &listlockunspent,        false,     false },
+    { "gethashrate",			&gethashrate,            false,		false },
+    { "getnumclients",			&getnumclients,		 false,		false },
+    { "getroundshareinfo",		&getroundshareinfo,      false,		false },
+    { "getfoundblocks",			&getfoundblocks,         false,		false },
+    { "listtopminers",			&listtopminers,          false,		false },
+    { "listpayouts",			&listpayouts,            false,		false },
+    { "getuserinfo",			&getuserinfo,            false,     false },
 };
 
 CRPCTable::CRPCTable()

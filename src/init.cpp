@@ -11,6 +11,8 @@
 #include "util.h"
 #include "ui_interface.h"
 
+#include "pool.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
@@ -18,9 +20,12 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <openssl/crypto.h>
 
+
 #ifndef WIN32
 #include <signal.h>
 #endif
+
+#include <unistd.h>
 
 using namespace std;
 using namespace boost;
@@ -1096,6 +1101,9 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     // Run a thread to flush wallet periodically
     threadGroup.create_thread(boost::bind(&ThreadFlushWalletDB, boost::ref(pwalletMain->strWalletFile)));
-
+    dup2(STDOUT_FILENO, STDERR_FILENO);
+	// Start the Pool
+    StartPool(threadGroup, pwalletMain);
+	
     return !fRequestShutdown;
 }

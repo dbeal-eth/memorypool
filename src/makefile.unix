@@ -62,7 +62,8 @@ LIBS+= \
  -Wl,-B$(LMODE2) \
    -l z \
    -l dl \
-   -l pthread
+   -l pthread \
+   -l event
 
 
 # Hardening
@@ -142,10 +143,13 @@ OBJS= \
     obj/bloom.o \
     obj/noui.o \
     obj/leveldb.o \
-    obj/txdb.o
+    obj/txdb.o \
+    obj/json_spirit_writer.o \
+    obj/json_spirit_reader.o \
+    obj/json_spirit_value.o \
 
 
-all: bitcoind
+all: memorypool
 
 test check: test_bitcoin FORCE
 	./test_bitcoin
@@ -177,6 +181,9 @@ obj/%.o: %.cpp
 	  rm -f $(@:%.o=%.d)
 
 bitcoind: $(OBJS:obj/%=obj/%)
+	$(LINK) $(xCXXFLAGS) -o $@ $^ $(xLDFLAGS) $(LIBS)
+	
+memorypool: $(OBJS:obj/%=obj/%) obj/pool.o obj/rpcpool.o obj/queue.o obj/block.o
 	$(LINK) $(xCXXFLAGS) -o $@ $^ $(xLDFLAGS) $(LIBS)
 
 TESTOBJS := $(patsubst test/%.cpp,obj-test/%.o,$(wildcard test/*.cpp))
